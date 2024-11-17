@@ -38,6 +38,27 @@ namespace gui
 
         ~Frame();
     };
+    
+    class Connect_Dialog : public wxDialog
+    {
+    protected:
+        wxTextCtrl* server_input;
+        wxButton* connect_button;
+        std::string host_, port_;
+
+    public:    
+        Connect_Dialog(wxWindow* parent, wxWindowID id = wxID_ANY,
+            const wxString& title = _("connect to server"),
+            const wxPoint& pos = wxDefaultPosition,
+            const wxSize& size = wxSize(-1, -1),
+            long style = wxDEFAULT_DIALOG_STYLE);
+        
+        void connect(wxCommandEvent& event);
+        std::string host() { return host_; }
+        std::string port() { return port_; }
+
+        ~Connect_Dialog();
+    };
 
     class Epilogue : public wxApp
     {
