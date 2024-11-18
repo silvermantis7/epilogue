@@ -158,7 +158,7 @@ static void gui::receive_messages(wxListCtrl* message_display,
 
                 if (command_id == epilogue::Command_ID::PING)
                     connection->send_message("PONG\r\n");
-                else if (command_id == epilogue::Command_ID::PRIVMSG)
+                else if (command_id == epilogue::Command_ID::PRIVMSG || command_id == epilogue::Command_ID::JOIN)
                 {
                     wxTheApp->CallAfter([command_body, message_display]
                     {
