@@ -128,8 +128,11 @@ void gui::Frame::send_message(wxCommandEvent& event)
 
     try
     {
-        connection->send_message(message_box->GetValue().ToStdString() +
-            "\r\n");
+        std::string message = message_box->GetValue().ToStdString();
+        connection->send_message(message + "\r\n");
+
+        message_display->InsertItem(message_display->GetItemCount(), message);
+        message_display->SetColumnWidth(0, wxLIST_AUTOSIZE);
     }
     catch (std::exception& e)
     {
