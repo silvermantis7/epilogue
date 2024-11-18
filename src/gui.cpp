@@ -1,4 +1,5 @@
 #include "gui.hpp"
+#include "process_messages.hpp"
 
 wxIMPLEMENT_APP(gui::Epilogue);
 
@@ -30,7 +31,7 @@ gui::Frame::Frame(wxWindow* parent, wxWindowID id, const wxString& title,
             wxOK | wxICON_INFORMATION);
         exit(-1);
     }
-    
+
     std::cout << "<*> connection successful\n";
 
     this->SetSizeHints(wxDefaultSize, wxDefaultSize);
@@ -151,12 +152,21 @@ static void gui::receive_messages(wxListCtrl* message_display,
             {
                 message.pop_back(); // remove '\r' character
 
-                wxTheApp->CallAfter([message, message_display]
+                epilogue::Command command = epilogue::process_message(message);
+                epilogue::Command_ID command_id = std::get<0>(command);
+                std::string command_body = std::get<1>(command);
+
+                if (command_id == epilogue::Command_ID::PING)
+                    connection->send_message("PONG\r\n");
+                else if (command_id == epilogue::Command_ID::PRIVMSG)
                 {
-                    message_display->InsertItem(message_display->GetItemCount(),
-                        message);
-                    message_display->SetColumnWidth(0, wxLIST_AUTOSIZE);
-                });
+                    wxTheApp->CallAfter([command_body, message_display]
+                    {
+                        message_display->InsertItem(
+                            message_display->GetItemCount(), command_body);
+                        message_display->SetColumnWidth(0, wxLIST_AUTOSIZE);
+                    });
+                }
             }
         }
     }
