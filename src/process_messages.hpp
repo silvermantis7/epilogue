@@ -33,7 +33,10 @@ epilogue::Command epilogue::process_message(std::string message)
     /* determine type of command */
     // server ping
     if (words.at(0) == "PING")
+    {
         command_id = epilogue::Command_ID::PING;
+        command_body = words.at(1);
+    }
     // sent message
     else if (words.at(1) == "PRIVMSG")
     {

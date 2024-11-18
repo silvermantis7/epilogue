@@ -112,7 +112,8 @@ gui::Connect_Dialog::Connect_Dialog(wxWindow* parent, wxWindowID id,
 	bSizer2->Fit(this);
 
     connect_button->Bind(wxEVT_BUTTON, &Connect_Dialog::connect, this);
-    server_input->Bind(wxEVT_COMMAND_TEXT_ENTER, &Connect_Dialog::connect, this);
+    server_input->Bind(wxEVT_COMMAND_TEXT_ENTER, &Connect_Dialog::connect,
+        this);
 
 	this->Centre(wxBOTH);
 }
@@ -160,8 +161,9 @@ static void gui::receive_messages(wxListCtrl* message_display,
                 std::string command_body = std::get<1>(command);
 
                 if (command_id == epilogue::Command_ID::PING)
-                    connection->send_message("PONG\r\n");
-                else if (command_id == epilogue::Command_ID::PRIVMSG || command_id == epilogue::Command_ID::JOIN)
+                    connection->send_message("PONG " + command_body + "\r\n");
+                else if (command_id == epilogue::Command_ID::PRIVMSG
+                    || command_id == epilogue::Command_ID::JOIN)
                 {
                     wxTheApp->CallAfter([command_body, message_display]
                     {
