@@ -127,9 +127,24 @@ void gui::Frame::send_message(wxCommandEvent& event)
     if (message_box->IsEmpty())
         return;
 
+    std::string target = "#test";
+
     try
     {
         std::string message = message_box->GetValue().ToStdString();
+
+        // if the message should be the body of a privmsg
+        if (message.at(0) != '/' || message.at(1) == '/')
+        {
+            if (message.at(0) == '/')
+                message.erase(0, 1);
+
+            message = "PRIVMSG " + target + " :" + message;
+        }
+
+        if (message.at(0) == '/')
+            message.erase(0, 1);
+
         connection->send_message(message + "\r\n");
 
         message_display->InsertItem(message_display->GetItemCount(), message);
