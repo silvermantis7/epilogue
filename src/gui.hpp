@@ -22,9 +22,12 @@ namespace gui
     {
     protected:
         wxTextCtrl* message_box;
+        wxStatusBar* statusbar;
+
         ::epilogue::Connection::pointer connection;
         std::thread read_thread;
         std::thread send_thread;
+        std::string channel_context = "#test";
 
     public:
         Frame(wxWindow* parent, wxWindowID id = wxID_ANY,
@@ -68,4 +71,7 @@ namespace gui
 
     static void receive_messages(wxListCtrl* message_display,
         ::epilogue::Connection::pointer connection);
+
+    static void update_statusbar(wxStatusBar* statusbar,
+        std::string* channel_context);
 }

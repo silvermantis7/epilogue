@@ -63,6 +63,10 @@ gui::Frame::Frame(wxWindow* parent, wxWindowID id, const wxString& title,
     this->SetSizer(box_sizer);
     this->Layout();
 
+    statusbar = this->CreateStatusBar(2, 0, wxID_ANY);
+    statusbar->SetForegroundColour(wxColour(255, 255, 255));
+    statusbar->SetBackgroundColour(wxColour(16, 16, 16));
+
     this->Centre(wxBOTH);
 
     message_box->Connect(wxEVT_COMMAND_TEXT_ENTER,
@@ -72,6 +76,10 @@ gui::Frame::Frame(wxWindow* parent, wxWindowID id, const wxString& title,
     std::thread receive_thread(gui::receive_messages, message_display,
         connection);
     receive_thread.detach();
+
+    std::thread statusbar_thread(gui::update_statusbar, statusbar,
+        &channel_context);
+    statusbar_thread.detach();
 }
 
 gui::Frame::~Frame()
@@ -127,8 +135,6 @@ void gui::Frame::send_message(wxCommandEvent& event)
     if (message_box->IsEmpty())
         return;
 
-    std::string target = "#test";
-
     try
     {
         std::string message = message_box->GetValue().ToStdString();
@@ -139,7 +145,7 @@ void gui::Frame::send_message(wxCommandEvent& event)
             if (message.at(0) == '/')
                 message.erase(0, 1);
 
-            message = "PRIVMSG " + target + " :" + message;
+            message = "PRIVMSG " + channel_context + " :" + message;
         }
 
         if (message.at(0) == '/')
@@ -231,4 +237,25 @@ void gui::Connect_Dialog::connect(wxCommandEvent& event)
     std::cout << "\t-> " << port_ << "\n";
 
     EndModal(0);
+}
+
+static void gui::update_statusbar(wxStatusBar* statusbar,
+    std::string* channel_context)
+{
+    for (;;)
+    {
+        time_t time_ptr = time(NULL);
+        tm* time_now = std::localtime(&time_ptr);
+
+        char time_str[50];
+        std::strftime(time_str, 50, "%A %H:%M", time_now);
+
+        wxTheApp->CallAfter([statusbar, channel_context, time_str]
+        {
+            statusbar->SetStatusText(time_str, 0);
+            statusbar->SetStatusText(*channel_context, 1);
+        });
+
+        sleep(1);
+    }
 }
