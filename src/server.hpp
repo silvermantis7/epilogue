@@ -33,6 +33,8 @@ namespace epilogue
         tcp::resolver resolver;
         tcp::socket socket;
 
+        std::vector<std::string> channels = { "*global*" };
+
         // used for when message recieved is too big for read_messages() buffer
         std::string read_overflow = "";
     };

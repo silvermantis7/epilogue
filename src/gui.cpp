@@ -5,13 +5,13 @@ wxIMPLEMENT_APP(gui::Epilogue);
 
 bool gui::Epilogue::OnInit()
 {
-    gui::Frame* frame = new gui::Frame(nullptr);
+    gui::Main_Frame* frame = new gui::Main_Frame(nullptr);
     frame->Show(true);
     return true;
 }
 
-gui::Frame::Frame(wxWindow* parent, wxWindowID id, const wxString& title,
-    const wxPoint& pos, const wxSize& size, long style)
+gui::Main_Frame::Main_Frame(wxWindow* parent, wxWindowID id,
+    const wxString& title, const wxPoint& pos, const wxSize& size, long style)
     : wxFrame(parent, id, title, pos, size, style)
 {
     gui::Connect_Dialog connect_dialog(this);
@@ -38,29 +38,38 @@ gui::Frame::Frame(wxWindow* parent, wxWindowID id, const wxString& title,
     this->SetForegroundColour(wxColour(0, 255, 255));
     this->SetBackgroundColour(wxColour(34, 34, 34));
 
-    wxBoxSizer* box_sizer;
-    box_sizer = new wxBoxSizer(wxVERTICAL);
+    wxBoxSizer* window_sizer = new wxBoxSizer(wxVERTICAL);
 
-    message_display = new wxListCtrl(this, wxID_ANY, wxDefaultPosition,
+    main_notebook = new wxAuiNotebook(this, wxID_ANY, wxDefaultPosition,
+        wxDefaultSize, wxAUI_NB_DEFAULT_STYLE);
+    window_sizer->Add(main_notebook, 1, wxALL | wxEXPAND, 5);
+    main_panel = new wxPanel(main_notebook, wxID_ANY, wxDefaultPosition,
+        wxDefaultSize, wxTAB_TRAVERSAL);
+    wxBoxSizer* panel_sizer = new wxBoxSizer(wxVERTICAL);
+    main_panel->SetSizer(panel_sizer);
+
+    message_display = new wxListCtrl(main_panel, wxID_ANY, wxDefaultPosition,
         wxDefaultSize, wxLC_ICON | wxLC_REPORT | wxLC_NO_HEADER);
     message_display->SetFont(wxFont(9, wxFONTFAMILY_TELETYPE,
         wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxT("Monospace")));
     message_display->SetForegroundColour(wxColour(255, 255, 255));
     message_display->SetBackgroundColour(wxColour(24, 24, 24));
     message_display->InsertColumn(0, "message", wxLIST_FORMAT_LEFT);
+    panel_sizer->Add(message_display, 1, wxEXPAND | wxALL, 5);
 
-    box_sizer->Add(message_display, 1, wxEXPAND | wxALL, 5);
-
-    message_box = new wxTextCtrl(this, wxID_ANY, wxEmptyString,
+    message_box = new wxTextCtrl(main_panel, wxID_ANY, wxEmptyString,
         wxDefaultPosition, wxSize(-1,25), 0 | wxTE_PROCESS_ENTER);
     message_box->SetFont(wxFont(9, wxFONTFAMILY_TELETYPE, wxFONTSTYLE_NORMAL,
         wxFONTWEIGHT_NORMAL, false, wxT("Monospace")));
     message_box->SetForegroundColour(wxColour(255, 255, 255));
     message_box->SetBackgroundColour(wxColour(48, 48, 48));
+    panel_sizer->Add(message_box, 0, wxALL | wxEXPAND, 5);
 
-    box_sizer->Add(message_box, 0, wxALL | wxEXPAND, 5);
+    main_panel->Layout();
+    panel_sizer->Fit(main_panel);
+    main_notebook->AddPage(main_panel, _("*global*"), true, wxNullBitmap);
 
-    this->SetSizer(box_sizer);
+    this->SetSizer(window_sizer);
     this->Layout();
 
     statusbar = this->CreateStatusBar(2, 0, wxID_ANY);
@@ -70,7 +79,7 @@ gui::Frame::Frame(wxWindow* parent, wxWindowID id, const wxString& title,
     this->Centre(wxBOTH);
 
     message_box->Connect(wxEVT_COMMAND_TEXT_ENTER,
-        wxCommandEventHandler(gui::Frame::send_message), NULL, this);
+        wxCommandEventHandler(gui::Main_Frame::send_message), NULL, this);
     message_box->SetFocus();
 
     std::thread receive_thread(gui::receive_messages, message_display,
@@ -82,7 +91,7 @@ gui::Frame::Frame(wxWindow* parent, wxWindowID id, const wxString& title,
     statusbar_thread.detach();
 }
 
-gui::Frame::~Frame()
+gui::Main_Frame::~Main_Frame()
 {
 }
 
@@ -94,8 +103,8 @@ gui::Connect_Dialog::Connect_Dialog(wxWindow* parent, wxWindowID id,
 	this->SetForegroundColour(wxColour(255, 255, 255));
 	this->SetBackgroundColour(wxColour(34, 34, 34));
 
-	wxBoxSizer* bSizer2;
-	bSizer2 = new wxBoxSizer(wxVERTICAL);
+	wxBoxSizer* window_sizer;
+	window_sizer = new wxBoxSizer(wxVERTICAL);
 
 	server_input = new wxTextCtrl(this, wxID_ANY, wxEmptyString,
         wxDefaultPosition, wxSize(200, 25), 0 | wxTE_PROCESS_ENTER);
@@ -104,7 +113,7 @@ gui::Connect_Dialog::Connect_Dialog(wxWindow* parent, wxWindowID id,
 	server_input->SetForegroundColour(wxColour(255, 255, 255));
 	server_input->SetBackgroundColour(wxColour(48, 48, 48));
 
-	bSizer2->Add(server_input, 0, wxALL, 5);
+	window_sizer->Add(server_input, 0, wxALL, 5);
 
 	connect_button = new wxButton(this, wxID_ANY, _("connect"),
         wxDefaultPosition, wxSize(-1, 25), 0);
@@ -113,11 +122,11 @@ gui::Connect_Dialog::Connect_Dialog(wxWindow* parent, wxWindowID id,
 	connect_button->SetForegroundColour(wxColour(255, 255, 255));
 	connect_button->SetBackgroundColour(wxColour(40, 40, 40));
 
-	bSizer2->Add(connect_button, 0, wxALL | wxEXPAND, 5);
+	window_sizer->Add(connect_button, 0, wxALL | wxEXPAND, 5);
 
-	this->SetSizer(bSizer2);
+	this->SetSizer(window_sizer);
 	this->Layout();
-	bSizer2->Fit(this);
+	window_sizer->Fit(this);
 
     connect_button->Bind(wxEVT_BUTTON, &Connect_Dialog::connect, this);
     server_input->Bind(wxEVT_COMMAND_TEXT_ENTER, &Connect_Dialog::connect,
@@ -130,7 +139,7 @@ gui::Connect_Dialog::~Connect_Dialog()
 {
 }
 
-void gui::Frame::send_message(wxCommandEvent& event)
+void gui::Main_Frame::send_message(wxCommandEvent& event)
 {
     if (message_box->IsEmpty())
         return;
@@ -140,16 +149,19 @@ void gui::Frame::send_message(wxCommandEvent& event)
         std::string message = message_box->GetValue().ToStdString();
 
         // if the message should be the body of a privmsg
-        if (message.at(0) != '/' || message.at(1) == '/')
+        if (channel_context != "*global*")
         {
+            if (message.at(0) != '/' || message.at(1) == '/')
+            {
+                if (message.at(0) == '/')
+                    message.erase(0, 1);
+
+                message = "PRIVMSG " + channel_context + " :" + message;
+            }
+
             if (message.at(0) == '/')
                 message.erase(0, 1);
-
-            message = "PRIVMSG " + channel_context + " :" + message;
         }
-
-        if (message.at(0) == '/')
-            message.erase(0, 1);
 
         connection->send_message(message + "\r\n");
 
@@ -181,10 +193,15 @@ static void gui::receive_messages(wxListCtrl* message_display,
                 epilogue::Command_ID command_id = std::get<0>(command);
                 std::string command_body = std::get<1>(command);
 
+                static const std::vector<epilogue::Command_ID> loggable = {
+                    epilogue::Command_ID::PRIVMSG,
+                    epilogue::Command_ID::JOIN
+                };
+
                 if (command_id == epilogue::Command_ID::PING)
                     connection->send_message("PONG " + command_body + "\r\n");
-                else if (command_id == epilogue::Command_ID::PRIVMSG
-                    || command_id == epilogue::Command_ID::JOIN)
+                if (std::find(loggable.begin(), loggable.end(), command_id)
+                    != loggable.end())
                 {
                     wxTheApp->CallAfter([command_body, message_display]
                     {

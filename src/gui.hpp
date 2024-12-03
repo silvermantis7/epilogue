@@ -12,25 +12,29 @@
 #include <wx/string.h>
 #include <wx/textctrl.h>
 #include <wx/sizer.h>
+#include <wx/aui/auibook.h>
 #include <wx/frame.h>
 
 #include "server.hpp"
 
 namespace gui
 {
-    class Frame : public wxFrame
+    class Main_Frame : public wxFrame
     {
     protected:
+        wxAuiNotebook* main_notebook;
+        wxPanel* main_panel;
+
         wxTextCtrl* message_box;
         wxStatusBar* statusbar;
 
         ::epilogue::Connection::pointer connection;
         std::thread read_thread;
         std::thread send_thread;
-        std::string channel_context = "#test";
+        std::string channel_context = "*global*";
 
     public:
-        Frame(wxWindow* parent, wxWindowID id = wxID_ANY,
+        Main_Frame(wxWindow* parent, wxWindowID id = wxID_ANY,
             const wxString& title = _("Epilogue IRC Client"),
             const wxPoint& pos = wxDefaultPosition,
             const wxSize& size = wxSize(800, 600),
@@ -39,7 +43,7 @@ namespace gui
         void send_message(wxCommandEvent& event);
         wxListCtrl* message_display;
 
-        ~Frame();
+        ~Main_Frame();
     };
     
     class Connect_Dialog : public wxDialog
