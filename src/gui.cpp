@@ -89,6 +89,10 @@ gui::Main_Frame::Main_Frame(wxWindow* parent, wxWindowID id,
     std::thread statusbar_thread(gui::update_statusbar, statusbar,
         &channel_context);
     statusbar_thread.detach();
+
+    std::cout << "hello world\n";
+
+    gui::Panel* panel_1 = new gui::Panel("#test", main_notebook);
 }
 
 gui::Main_Frame::~Main_Frame()
