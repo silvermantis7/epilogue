@@ -139,19 +139,17 @@ void gui::Main_Frame::send_message(wxCommandEvent& event)
         std::string message = message_box->GetValue().ToStdString();
 
         // if the message should be the body of a privmsg
-        if (channel_context != "*global*")
+        if ((message.at(0) != '/' || message.at(1) == '/')
+	    && channel_context != "*global*")
         {
-            if (message.at(0) != '/' || message.at(1) == '/')
-            {
-                if (message.at(0) == '/')
-                    message.erase(0, 1);
-
-                message = "PRIVMSG " + channel_context + " :" + message;
-            }
-
             if (message.at(0) == '/')
                 message.erase(0, 1);
+
+            message = "PRIVMSG " + channel_context + " :" + message;
         }
+
+        if (message.at(0) == '/')
+            message.erase(0, 1);
 
         connection->send_message(message + "\r\n");
 
