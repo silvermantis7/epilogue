@@ -66,11 +66,9 @@ namespace gui
             // create message display
             message_display = new wxListCtrl(this, wxID_ANY, wxDefaultPosition,
                 wxDefaultSize, wxLC_ICON | wxLC_REPORT | wxLC_NO_HEADER);
-            message_display->SetFont(wxFont(9, wxFONTFAMILY_TELETYPE,
+            message_display->SetFont(wxFont(-1, wxFONTFAMILY_TELETYPE,
                 wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false,
                 wxT("Monospace")));
-            message_display->SetForegroundColour(wxColour(0xFF, 0xFF, 0xFF));
-            message_display->SetBackgroundColour(wxColour(0x18, 0x18, 0x18));
             message_display->InsertColumn(0, "user", wxLIST_FORMAT_RIGHT);
             message_display->InsertColumn(1, "message", wxLIST_FORMAT_LEFT);
             panel_sizer->Add(message_display, 1, wxEXPAND | wxALL, 5);
@@ -78,11 +76,9 @@ namespace gui
             // create message box
             message_box = new wxTextCtrl(this, wxID_ANY, wxEmptyString,
                 wxDefaultPosition, wxSize(-1, 25), 0 | wxTE_PROCESS_ENTER);
-            message_box->SetFont(wxFont(9, wxFONTFAMILY_TELETYPE,
+            message_box->SetFont(wxFont(-1, wxFONTFAMILY_TELETYPE,
                 wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false,
                 wxT("Monospace")));
-            message_box->SetForegroundColour(wxColour(0xFF, 0xFF, 0xFF));
-            message_box->SetBackgroundColour(wxColour(0x30, 0x30, 0x30));
             panel_sizer->Add(message_box, 0, wxALL | wxEXPAND, 5);
 
             // create page

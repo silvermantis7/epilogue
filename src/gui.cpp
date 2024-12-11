@@ -35,8 +35,6 @@ gui::Main_Frame::Main_Frame(wxWindow* parent, wxWindowID id,
     std::cout << "<*> connection successful\n";
 
     this->SetSizeHints(wxDefaultSize, wxDefaultSize);
-    this->SetForegroundColour(wxColour(0, 255, 255));
-    this->SetBackgroundColour(wxColour(34, 34, 34));
 
     wxBoxSizer* window_sizer = new wxBoxSizer(wxVERTICAL);
 
@@ -50,19 +48,15 @@ gui::Main_Frame::Main_Frame(wxWindow* parent, wxWindowID id,
 
     message_display = new wxListCtrl(main_panel, wxID_ANY, wxDefaultPosition,
         wxDefaultSize, wxLC_ICON | wxLC_REPORT | wxLC_NO_HEADER);
-    message_display->SetFont(wxFont(9, wxFONTFAMILY_TELETYPE,
+    message_display->SetFont(wxFont(-1, wxFONTFAMILY_TELETYPE,
         wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxT("Monospace")));
-    message_display->SetForegroundColour(wxColour(255, 255, 255));
-    message_display->SetBackgroundColour(wxColour(24, 24, 24));
     message_display->InsertColumn(0, "message", wxLIST_FORMAT_LEFT);
     panel_sizer->Add(message_display, 1, wxEXPAND | wxALL, 5);
 
     message_box = new wxTextCtrl(main_panel, wxID_ANY, wxEmptyString,
         wxDefaultPosition, wxSize(-1,25), 0 | wxTE_PROCESS_ENTER);
-    message_box->SetFont(wxFont(9, wxFONTFAMILY_TELETYPE, wxFONTSTYLE_NORMAL,
+    message_box->SetFont(wxFont(-1, wxFONTFAMILY_TELETYPE, wxFONTSTYLE_NORMAL,
         wxFONTWEIGHT_NORMAL, false, wxT("Monospace")));
-    message_box->SetForegroundColour(wxColour(255, 255, 255));
-    message_box->SetBackgroundColour(wxColour(48, 48, 48));
     panel_sizer->Add(message_box, 0, wxALL | wxEXPAND, 5);
 
     main_panel->Layout();
@@ -73,8 +67,6 @@ gui::Main_Frame::Main_Frame(wxWindow* parent, wxWindowID id,
     this->Layout();
 
     statusbar = this->CreateStatusBar(2, 0, wxID_ANY);
-    statusbar->SetForegroundColour(wxColour(255, 255, 255));
-    statusbar->SetBackgroundColour(wxColour(16, 16, 16));
 
     this->Centre(wxBOTH);
 
@@ -103,40 +95,34 @@ gui::Connect_Dialog::Connect_Dialog(wxWindow* parent, wxWindowID id,
     const wxString& title, const wxPoint& pos, const wxSize& size, long style)
     : wxDialog(parent, id, title, pos, size, style)
 {
-	this->SetSizeHints(wxDefaultSize, wxDefaultSize);
-	this->SetForegroundColour(wxColour(255, 255, 255));
-	this->SetBackgroundColour(wxColour(34, 34, 34));
+    this->SetSizeHints(wxDefaultSize, wxDefaultSize);
 
-	wxBoxSizer* window_sizer;
-	window_sizer = new wxBoxSizer(wxVERTICAL);
+    wxBoxSizer* window_sizer;
+    window_sizer = new wxBoxSizer(wxVERTICAL);
 
-	server_input = new wxTextCtrl(this, wxID_ANY, wxEmptyString,
-        wxDefaultPosition, wxSize(200, 25), 0 | wxTE_PROCESS_ENTER);
-	server_input->SetFont(wxFont(8, wxFONTFAMILY_TELETYPE, wxFONTSTYLE_NORMAL,
+    server_input = new wxTextCtrl(this, wxID_ANY, wxEmptyString,
+        wxDefaultPosition, wxSize(300, 25), 0 | wxTE_PROCESS_ENTER);
+    server_input->SetFont(wxFont(-1, wxFONTFAMILY_TELETYPE, wxFONTSTYLE_NORMAL,
         wxFONTWEIGHT_NORMAL, false, wxT("Monospace")));
-	server_input->SetForegroundColour(wxColour(255, 255, 255));
-	server_input->SetBackgroundColour(wxColour(48, 48, 48));
 
-	window_sizer->Add(server_input, 0, wxALL, 5);
+    window_sizer->Add(server_input, 0, wxALL, 5);
 
-	connect_button = new wxButton(this, wxID_ANY, _("connect"),
+    connect_button = new wxButton(this, wxID_ANY, _("connect"),
         wxDefaultPosition, wxSize(-1, 25), 0);
-    connect_button->SetFont(wxFont(8, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL,
+    connect_button->SetFont(wxFont(-1, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL,
         wxFONTWEIGHT_NORMAL, false, wxEmptyString));
-	connect_button->SetForegroundColour(wxColour(255, 255, 255));
-	connect_button->SetBackgroundColour(wxColour(40, 40, 40));
 
-	window_sizer->Add(connect_button, 0, wxALL | wxEXPAND, 5);
+    window_sizer->Add(connect_button, 0, wxALL | wxEXPAND, 5);
 
-	this->SetSizer(window_sizer);
-	this->Layout();
-	window_sizer->Fit(this);
+    this->SetSizer(window_sizer);
+    this->Layout();
+    window_sizer->Fit(this);
 
     connect_button->Bind(wxEVT_BUTTON, &Connect_Dialog::connect, this);
     server_input->Bind(wxEVT_COMMAND_TEXT_ENTER, &Connect_Dialog::connect,
         this);
 
-	this->Centre(wxBOTH);
+    this->Centre(wxBOTH);
 }
 
 gui::Connect_Dialog::~Connect_Dialog()
