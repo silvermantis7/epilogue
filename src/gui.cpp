@@ -5,8 +5,8 @@ wxIMPLEMENT_APP(gui::Epilogue);
 
 bool gui::Epilogue::OnInit()
 {
-    gui::Main_Frame* frame = new gui::Main_Frame(nullptr);
-    frame->Show(true);
+    gui::main_frame = new gui::Main_Frame(nullptr);
+    gui::main_frame->Show(true);
     return true;
 }
 
@@ -81,10 +81,6 @@ gui::Main_Frame::Main_Frame(wxWindow* parent, wxWindowID id,
     std::thread statusbar_thread(gui::update_statusbar, statusbar,
         &channel_context);
     statusbar_thread.detach();
-
-    std::cout << "hello world\n";
-
-    gui::Panel* panel_1 = new gui::Panel("#test", main_notebook);
 }
 
 gui::Main_Frame::~Main_Frame()
@@ -140,7 +136,7 @@ void gui::Main_Frame::send_message(wxCommandEvent& event)
 
         // if the message should be the body of a privmsg
         if ((message.at(0) != '/' || message.at(1) == '/')
-	    && channel_context != "*global*")
+            && channel_context != "*global*")
         {
             if (message.at(0) == '/')
                 message.erase(0, 1);
@@ -263,4 +259,14 @@ static void gui::update_statusbar(wxStatusBar* statusbar,
 
         sleep(1);
     }
+}
+
+void gui::Main_Frame::join(std::string channel)
+{
+    std::cout << "joining [" + channel + "]\n";
+
+    gui::main_frame->CallAfter([channel, this]
+    {
+        gui::Panel* new_panel = new gui::Panel(channel, main_notebook);
+    });
 }

@@ -48,9 +48,13 @@ epilogue::Command epilogue::process_message(std::string message)
     // channel join
     else if (words.at(1) == "JOIN")
     {
+        std::string channel = words.at(2);
+
         command_id = epilogue::Command_ID::JOIN;
-        command_body = words.at(2) + " <- "
+        command_body = channel + " <- "
             + message.substr(1, message.find('!') - 1);
+        
+        gui::main_frame->join(channel);
     }
 
     epilogue::Command command = { command_id, command_body };

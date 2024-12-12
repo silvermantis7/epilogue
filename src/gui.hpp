@@ -41,6 +41,8 @@ namespace gui
             long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
 
         void send_message(wxCommandEvent& event);
+        void join(std::string channel);
+
         wxListCtrl* message_display;
 
         ~Main_Frame();
@@ -91,6 +93,8 @@ namespace gui
         {
         }
     };
+
+    static Main_Frame* main_frame;
     
     class Connect_Dialog : public wxDialog
     {
