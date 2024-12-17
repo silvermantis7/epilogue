@@ -41,27 +41,8 @@ gui::Main_Frame::Main_Frame(wxWindow* parent, wxWindowID id,
     main_notebook = new wxAuiNotebook(this, wxID_ANY, wxDefaultPosition,
         wxDefaultSize, wxAUI_NB_DEFAULT_STYLE);
     window_sizer->Add(main_notebook, 1, wxALL | wxEXPAND, 5);
-    main_panel = new wxPanel(main_notebook, wxID_ANY, wxDefaultPosition,
-        wxDefaultSize, wxTAB_TRAVERSAL);
-    wxBoxSizer* panel_sizer = new wxBoxSizer(wxVERTICAL);
-    main_panel->SetSizer(panel_sizer);
 
-    message_display = new wxListCtrl(main_panel, wxID_ANY, wxDefaultPosition,
-        wxDefaultSize, wxLC_ICON | wxLC_REPORT | wxLC_NO_HEADER);
-    message_display->SetFont(wxFont(-1, wxFONTFAMILY_TELETYPE,
-        wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxT("Monospace")));
-    message_display->InsertColumn(0, "message", wxLIST_FORMAT_LEFT);
-    panel_sizer->Add(message_display, 1, wxEXPAND | wxALL, 5);
-
-    message_box = new wxTextCtrl(main_panel, wxID_ANY, wxEmptyString,
-        wxDefaultPosition, wxSize(-1,25), 0 | wxTE_PROCESS_ENTER);
-    message_box->SetFont(wxFont(-1, wxFONTFAMILY_TELETYPE, wxFONTSTYLE_NORMAL,
-        wxFONTWEIGHT_NORMAL, false, wxT("Monospace")));
-    panel_sizer->Add(message_box, 0, wxALL | wxEXPAND, 5);
-
-    main_panel->Layout();
-    panel_sizer->Fit(main_panel);
-    main_notebook->AddPage(main_panel, _("*global*"), true, wxNullBitmap);
+    gui::Panel* global_panel = new gui::Panel("*global*", main_notebook);
 
     this->SetSizer(window_sizer);
     this->Layout();
@@ -70,12 +51,7 @@ gui::Main_Frame::Main_Frame(wxWindow* parent, wxWindowID id,
 
     this->Centre(wxBOTH);
 
-    message_box->Connect(wxEVT_COMMAND_TEXT_ENTER,
-        wxCommandEventHandler(gui::Main_Frame::send_message), NULL, this);
-    message_box->SetFocus();
-
-    std::thread receive_thread(gui::receive_messages, message_display,
-        connection);
+    std::thread receive_thread(gui::receive_messages, connection);
     receive_thread.detach();
 
     std::thread statusbar_thread(gui::update_statusbar, statusbar,
@@ -125,45 +101,45 @@ gui::Connect_Dialog::~Connect_Dialog()
 {
 }
 
-void gui::Main_Frame::send_message(wxCommandEvent& event)
+void gui::Panel::send_message(wxCommandEvent& event)
 {
     if (message_box->IsEmpty())
         return;
 
-    try
+    gui::main_frame->CallAfter([this]
     {
-        std::string message = message_box->GetValue().ToStdString();
-
-        // if the message should be the body of a privmsg
-        if ((message.at(0) != '/' || message.at(1) == '/')
-            && channel_context != "*global*")
+        try
         {
+            std::string message = message_box->GetValue().ToStdString();
+            message_box->Clear();
+
+            // if the message should be the body of a privmsg
+            bool is_privmsg = (context != "*global*");
             if (message.at(0) == '/')
+            {
                 message.erase(0, 1);
+                is_privmsg &= (message.at(0) == '/');
+            }
 
-            message = "PRIVMSG " + channel_context + " :" + message;
+            if (is_privmsg)
+                message = "PRIVMSG " + context + " :" + message;
+
+            message_display->InsertItem(message_display->GetItemCount(),
+                message);
+            message_display->SetColumnWidth(0, wxLIST_AUTOSIZE);
+
+            gui::main_frame->get_connection()->send_message(message + "\r\n");
         }
-
-        if (message.at(0) == '/')
-            message.erase(0, 1);
-
-        connection->send_message(message + "\r\n");
-
-        message_display->InsertItem(message_display->GetItemCount(), message);
-        message_display->SetColumnWidth(0, wxLIST_AUTOSIZE);
-    }
-    catch (std::exception& e)
-    {
-        std::cerr << e.what() << "\n";
-        wxMessageBox(e.what(), "client disconnected",
-            wxOK | wxICON_INFORMATION);
-    }
-
-    message_box->Clear();
+        catch (std::exception& e)
+        {
+            std::cerr << e.what() << "\n";
+            wxMessageBox(e.what(), "client disconnected",
+                wxOK | wxICON_INFORMATION);
+        }
+    });
 }
 
-static void gui::receive_messages(wxListCtrl* message_display,
-    ::epilogue::Connection::pointer connection)
+static void gui::receive_messages(::epilogue::Connection::pointer connection)
 {
     try
     {
@@ -177,6 +153,7 @@ static void gui::receive_messages(wxListCtrl* message_display,
                 epilogue::Command_ID command_id = std::get<0>(command);
                 std::string command_body = std::get<1>(command);
 
+                // types of commands to be looged in the message display
                 static const std::vector<epilogue::Command_ID> loggable = {
                     epilogue::Command_ID::PRIVMSG,
                     epilogue::Command_ID::JOIN
@@ -187,7 +164,12 @@ static void gui::receive_messages(wxListCtrl* message_display,
                 if (std::find(loggable.begin(), loggable.end(), command_id)
                     != loggable.end())
                 {
-                    wxTheApp->CallAfter([command_body, message_display]
+                    wxWindow* notebook
+                        = gui::main_frame->get_notebook()->GetCurrentPage();
+
+                    wxListCtrl* message_display =
+                        gui::Panel::channel_logs[std::get<2>(command)];
+                    main_frame->CallAfter([command_body, message_display]
                     {
                         message_display->InsertItem(
                             message_display->GetItemCount(), command_body);
@@ -270,3 +252,39 @@ void gui::Main_Frame::join(std::string channel)
         gui::Panel* new_panel = new gui::Panel(channel, main_notebook);
     });
 }
+
+gui::Panel::Panel(std::string context, wxAuiNotebook* notebook)
+    : wxPanel(notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+        wxTAB_TRAVERSAL)
+{
+    panel_sizer = new wxBoxSizer(wxVERTICAL);
+    this->context = context;
+    this->SetSizer(panel_sizer);
+    // create message display
+    message_display = new wxListCtrl(this, wxID_ANY, wxDefaultPosition,
+        wxDefaultSize, wxLC_ICON | wxLC_REPORT | wxLC_NO_HEADER);
+    message_display->SetFont(wxFont(-1, wxFONTFAMILY_TELETYPE,
+        wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxT("Monospace")));
+    message_display->InsertColumn(0, "user", wxLIST_FORMAT_RIGHT);
+    message_display->InsertColumn(1, "message", wxLIST_FORMAT_LEFT);
+    panel_sizer->Add(message_display, 1, wxEXPAND | wxALL, 5);
+    // create message box
+    message_box = new wxTextCtrl(this, wxID_ANY, wxEmptyString,
+        wxDefaultPosition, wxSize(-1, 25), 0 | wxTE_PROCESS_ENTER);
+    message_box->SetFont(wxFont(-1, wxFONTFAMILY_TELETYPE, wxFONTSTYLE_NORMAL,
+        wxFONTWEIGHT_NORMAL, false, wxT("Monospace")));
+    panel_sizer->Add(message_box, 0, wxALL | wxEXPAND, 5);
+    // create page
+    this->Layout();
+    panel_sizer->Fit(this);
+    notebook->AddPage(this, _(context), false, wxNullBitmap);
+    // bind message input to send_message
+    message_box->Bind(wxEVT_COMMAND_TEXT_ENTER, &gui::Panel::send_message,
+        this);
+    message_box->SetFocus();
+
+    // add message display to hashmap of message logs
+    channel_logs[context] = message_display;
+}
+
+std::unordered_map<std::string, wxListCtrl*> gui::Panel::channel_logs = { };

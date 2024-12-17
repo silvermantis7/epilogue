@@ -15,6 +15,8 @@
 #include <wx/aui/auibook.h>
 #include <wx/frame.h>
 
+#include <unordered_map>
+
 #include "server.hpp"
 
 namespace gui
@@ -25,7 +27,6 @@ namespace gui
         wxAuiNotebook* main_notebook;
         wxPanel* main_panel;
 
-        wxTextCtrl* message_box;
         wxStatusBar* statusbar;
 
         ::epilogue::Connection::pointer connection;
@@ -40,10 +41,13 @@ namespace gui
             const wxSize& size = wxSize(800, 600),
             long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
 
-        void send_message(wxCommandEvent& event);
-        void join(std::string channel);
+            ::epilogue::Connection::pointer get_connection()
+            {
+                return connection;
+            }
 
-        wxListCtrl* message_display;
+        void join(std::string channel);
+        wxAuiNotebook* get_notebook() { return main_notebook; }
 
         ~Main_Frame();
     };
@@ -57,40 +61,17 @@ namespace gui
         std::string context;
 
     public:
-        Panel(std::string context, wxAuiNotebook* notebook)
-            : wxPanel(notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize,
-                wxTAB_TRAVERSAL)
-        {
-            panel_sizer = new wxBoxSizer(wxVERTICAL);
-            this->context = context;
-            this->SetSizer(panel_sizer);
+        Panel(std::string context, wxAuiNotebook* notebook);
 
-            // create message display
-            message_display = new wxListCtrl(this, wxID_ANY, wxDefaultPosition,
-                wxDefaultSize, wxLC_ICON | wxLC_REPORT | wxLC_NO_HEADER);
-            message_display->SetFont(wxFont(-1, wxFONTFAMILY_TELETYPE,
-                wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false,
-                wxT("Monospace")));
-            message_display->InsertColumn(0, "user", wxLIST_FORMAT_RIGHT);
-            message_display->InsertColumn(1, "message", wxLIST_FORMAT_LEFT);
-            panel_sizer->Add(message_display, 1, wxEXPAND | wxALL, 5);
+        void send_message(wxCommandEvent& event);
 
-            // create message box
-            message_box = new wxTextCtrl(this, wxID_ANY, wxEmptyString,
-                wxDefaultPosition, wxSize(-1, 25), 0 | wxTE_PROCESS_ENTER);
-            message_box->SetFont(wxFont(-1, wxFONTFAMILY_TELETYPE,
-                wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false,
-                wxT("Monospace")));
-            panel_sizer->Add(message_box, 0, wxALL | wxEXPAND, 5);
-
-            // create page
-            this->Layout();
-            panel_sizer->Fit(this);
-            notebook->AddPage(this, _(context), false, wxNullBitmap);
-        }
+        // pointers to each message display, key is channel name/context
+        static std::unordered_map<std::string, wxListCtrl*> channel_logs;
 
         ~Panel()
         {
+            // remove self from channel_logs hashmap
+            channel_logs.erase(context);
         }
     };
 
@@ -123,8 +104,7 @@ namespace gui
         bool OnInit() override;
     };
 
-    static void receive_messages(wxListCtrl* message_display,
-        ::epilogue::Connection::pointer connection);
+    static void receive_messages(::epilogue::Connection::pointer connection);
 
     static void update_statusbar(wxStatusBar* statusbar,
         std::string* channel_context);
