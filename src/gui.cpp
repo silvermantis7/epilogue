@@ -148,10 +148,7 @@ static void gui::receive_messages(::epilogue::Connection::pointer connection)
             for (std::string message : connection->read_messages())
             {
                 message.pop_back(); // remove '\r' character
-
                 epilogue::Command command = epilogue::process_message(message);
-                epilogue::Command_ID command_id = std::get<0>(command);
-                std::string command_body = std::get<1>(command);
 
                 // types of commands to be looged in the message display
                 static const std::vector<epilogue::Command_ID> loggable = {
@@ -159,20 +156,20 @@ static void gui::receive_messages(::epilogue::Connection::pointer connection)
                     epilogue::Command_ID::JOIN
                 };
 
-                if (command_id == epilogue::Command_ID::PING)
-                    connection->send_message("PONG " + command_body + "\r\n");
-                if (std::find(loggable.begin(), loggable.end(), command_id)
+                if (command.cmd_id == epilogue::Command_ID::PING)
+                    connection->send_message("PONG " + command.body + "\r\n");
+                if (std::find(loggable.begin(), loggable.end(), command.cmd_id)
                     != loggable.end())
                 {
                     wxWindow* notebook
                         = gui::main_frame->get_notebook()->GetCurrentPage();
 
                     wxListCtrl* message_display =
-                        gui::Panel::channel_logs[std::get<2>(command)];
-                    main_frame->CallAfter([command_body, message_display]
+                        gui::Panel::channel_logs[command.context];
+                    main_frame->CallAfter([command, message_display]
                     {
                         message_display->InsertItem(
-                            message_display->GetItemCount(), command_body);
+                            message_display->GetItemCount(), command.body);
                         message_display->SetColumnWidth(0, wxLIST_AUTOSIZE);
                     });
                 }

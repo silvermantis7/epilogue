@@ -13,7 +13,14 @@ namespace epilogue
 
     std::string nick;
 
-    using Command = std::tuple<Command_ID, std::string, std::string>;
+    struct Command
+    {
+        Command_ID cmd_id;
+        std::string body;
+        std::string context;
+        std::string sender;
+    };
+
     Command process_message(std::string message);
 }
 
@@ -33,6 +40,7 @@ epilogue::Command epilogue::process_message(std::string message)
     epilogue::Command_ID command_id = epilogue::Command_ID::UNKNOWN;
     std::string command_body = "";
     std::string channel_context = "*global*";
+    std::string sender = "*.*";
 
     /* determine type of command */
     int cmd_num = std::atoi(words.at(1).c_str());
@@ -58,10 +66,9 @@ epilogue::Command epilogue::process_message(std::string message)
     else if (words.at(1) == "PRIVMSG")
     {
         command_id = epilogue::Command_ID::PRIVMSG;
-        command_body = "[" + words.at(2) + "] <"
-            + message.substr(1, message.find('!') - 1) + "> "
-            + message.substr(message.find(':', 1) + 1);
+        command_body = message.substr(message.find(':', 1) + 1);
         channel_context = words.at(2);
+        sender = message.substr(1, message.find('!', 1) - 1);
     }
     // channel join
     else if (words.at(1) == "JOIN")
@@ -77,8 +84,17 @@ epilogue::Command epilogue::process_message(std::string message)
             gui::main_frame->join(channel);
     }
 
-    epilogue::Command command = { command_id, command_body, channel_context };
-    std::cout << "$ { " << std::get<0>(command) << ", \""
-        << std::get<1>(command) << "\" }\n";
+    epilogue::Command command = {
+        command_id,
+        command_body,
+        channel_context,
+        sender.c_str()
+    };
+
+    std::cout << "$ { "
+        << command.cmd_id << ", \""
+        << command.body << "\", \""
+        << command.context << "\", \""
+        << command.sender << "\" }\n";
     return command;
 }
