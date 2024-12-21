@@ -124,9 +124,11 @@ void gui::Panel::send_message(wxCommandEvent& event)
             if (is_privmsg)
                 message = "PRIVMSG " + context + " :" + message;
 
-            message_display->InsertItem(message_display->GetItemCount(),
-                message);
+            int n_rows = message_display->GetItemCount();
+            message_display->InsertItem(n_rows, "-->");
+            message_display->SetItem(n_rows, 1, message);
             message_display->SetColumnWidth(0, wxLIST_AUTOSIZE);
+            message_display->SetColumnWidth(1, wxLIST_AUTOSIZE);
 
             gui::main_frame->get_connection()->send_message(message + "\r\n");
         }
@@ -168,9 +170,12 @@ static void gui::receive_messages(::epilogue::Connection::pointer connection)
                         gui::Panel::channel_logs[command.context];
                     main_frame->CallAfter([command, message_display]
                     {
-                        message_display->InsertItem(
-                            message_display->GetItemCount(), command.body);
+                        int n_rows = message_display->GetItemCount();
+
+                        message_display->InsertItem(n_rows, command.sender);
+                        message_display->SetItem(n_rows, 1, command.body);
                         message_display->SetColumnWidth(0, wxLIST_AUTOSIZE);
+                        message_display->SetColumnWidth(1, wxLIST_AUTOSIZE);
                     });
                 }
             }
@@ -259,7 +264,7 @@ gui::Panel::Panel(std::string context, wxAuiNotebook* notebook)
     this->SetSizer(panel_sizer);
     // create message display
     message_display = new wxListCtrl(this, wxID_ANY, wxDefaultPosition,
-        wxDefaultSize, wxLC_ICON | wxLC_REPORT | wxLC_NO_HEADER);
+        wxDefaultSize, wxLC_REPORT | wxLC_NO_HEADER);
     message_display->SetFont(wxFont(-1, wxFONTFAMILY_TELETYPE,
         wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxT("Monospace")));
     message_display->InsertColumn(0, "user", wxLIST_FORMAT_RIGHT);

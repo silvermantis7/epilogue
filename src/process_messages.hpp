@@ -68,7 +68,7 @@ epilogue::Command epilogue::process_message(std::string message)
         command_id = epilogue::Command_ID::PRIVMSG;
         command_body = message.substr(message.find(':', 1) + 1);
         channel_context = words.at(2);
-        sender = message.substr(1, message.find('!', 1) - 1);
+        sender = "<" + message.substr(1, message.find('!', 1) - 1) + ">";
     }
     // channel join
     else if (words.at(1) == "JOIN")
