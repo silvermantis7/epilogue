@@ -121,14 +121,14 @@ void gui::Panel::send_message(wxCommandEvent& event)
                 is_privmsg &= (message.at(0) == '/');
             }
 
-            if (is_privmsg)
-                message = "PRIVMSG " + context + " :" + message;
-
             int n_rows = message_display->GetItemCount();
             message_display->InsertItem(n_rows, "-->");
             message_display->SetItem(n_rows, 1, message);
             message_display->SetColumnWidth(0, wxLIST_AUTOSIZE);
             message_display->SetColumnWidth(1, wxLIST_AUTOSIZE);
+
+            if (is_privmsg)
+                message = "PRIVMSG " + context + " :" + message;
 
             gui::main_frame->get_connection()->send_message(message + "\r\n");
         }
