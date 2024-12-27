@@ -169,7 +169,7 @@ static void gui::receive_messages(::epilogue::Connection::pointer connection)
 
                     using Panel = gui::Panel;
 
-                    main_frame->CallAfter([&]
+                    main_frame->CallAfter([&, command]
                     {
                         // check if command context has a panel
                         if (auto panel = Panel::channel_logs.find(
