@@ -163,13 +163,26 @@ static void gui::receive_messages(::epilogue::Connection::pointer connection)
                 if (std::find(loggable.begin(), loggable.end(), command.cmd_id)
                     != loggable.end())
                 {
+                    if (command.context == "*none*") break;
                     wxWindow* notebook
                         = gui::main_frame->get_notebook()->GetCurrentPage();
 
-                    wxListCtrl* message_display =
-                        gui::Panel::channel_logs[command.context];
-                    main_frame->CallAfter([command, message_display]
+                    using Panel = gui::Panel;
+
+                    main_frame->CallAfter([&]
                     {
+                        // check if command context has a panel
+                        if (auto panel = Panel::channel_logs.find(
+                            command.context);
+                            panel == Panel::channel_logs.end())
+                        {
+                            new Panel(command.context,
+                                main_frame->get_notebook());
+                        }
+
+                        wxListCtrl* message_display =
+                        Panel::channel_logs[command.context];
+
                         int n_rows = message_display->GetItemCount();
 
                         message_display->InsertItem(n_rows, command.sender);
