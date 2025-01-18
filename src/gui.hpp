@@ -28,6 +28,7 @@ namespace gui
         wxPanel* main_panel;
 
         wxStatusBar* statusbar;
+        wxBoxSizer* window_sizer;
 
         ::epilogue::Connection::pointer connection;
         std::thread read_thread;
@@ -52,6 +53,8 @@ namespace gui
         ~Main_Frame();
     };
 
+    static Main_Frame* main_frame;
+
     class Panel : public wxPanel
     {
     protected:
@@ -72,10 +75,22 @@ namespace gui
         {
             // remove self from channel_logs hashmap
             channel_logs.erase(context);
+
+            if (context == "*global*")
+            {
+                // send QUIT message
+                main_frame->get_connection()->send_message("QUIT\r\n");
+                // close application
+                Destroy();
+            }
+            else
+            {
+                // send PART message
+                main_frame->get_connection()->send_message("PART " + context
+                    + "\r\n");
+            }
         }
     };
-
-    static Main_Frame* main_frame;
     
     class Connect_Dialog : public wxDialog
     {
@@ -90,7 +105,7 @@ namespace gui
             const wxPoint& pos = wxDefaultPosition,
             const wxSize& size = wxSize(-1, -1),
             long style = wxDEFAULT_DIALOG_STYLE);
-        
+
         void connect(wxCommandEvent& event);
         std::string host() { return host_; }
         std::string port() { return port_; }

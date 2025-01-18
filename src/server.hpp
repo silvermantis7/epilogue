@@ -52,8 +52,16 @@ std::vector<std::string> epilogue::Connection::read_messages()
 
     std::array<char, READ_BUF_SIZE> buf;
     std::error_code error;
+    size_t len;
 
-    size_t len = socket.read_some(asio::buffer(buf), error);
+    try
+    {
+        len = socket.read_some(asio::buffer(buf), error);
+    }
+    catch (std::exception& e)
+    {
+        return {};
+    }
 
     if (error)
         throw std::system_error(error);

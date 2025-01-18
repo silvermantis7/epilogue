@@ -36,7 +36,7 @@ gui::Main_Frame::Main_Frame(wxWindow* parent, wxWindowID id,
 
     this->SetSizeHints(wxDefaultSize, wxDefaultSize);
 
-    wxBoxSizer* window_sizer = new wxBoxSizer(wxVERTICAL);
+    window_sizer = new wxBoxSizer(wxVERTICAL);
 
     main_notebook = new wxAuiNotebook(this, wxID_ANY, wxDefaultPosition,
         wxDefaultSize, wxAUI_NB_DEFAULT_STYLE);
@@ -61,6 +61,10 @@ gui::Main_Frame::Main_Frame(wxWindow* parent, wxWindowID id,
 
 gui::Main_Frame::~Main_Frame()
 {
+    delete window_sizer;
+    window_sizer = nullptr;
+    delete main_notebook;
+    main_notebook = nullptr;
 }
 
 gui::Connect_Dialog::Connect_Dialog(wxWindow* parent, wxWindowID id,
