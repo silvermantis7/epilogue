@@ -1,5 +1,6 @@
 #include "gui.hpp"
 #include "process_messages.hpp"
+#include <thread>
 
 wxIMPLEMENT_APP(gui::Epilogue);
 
@@ -14,23 +15,8 @@ gui::Main_Frame::Main_Frame(wxWindow* parent, wxWindowID id,
     const wxString& title, const wxPoint& pos, const wxSize& size, long style)
     : wxFrame(parent, id, title, pos, size, style)
 {
-    gui::Connect_Dialog connect_dialog(this);
-    connect_dialog.ShowModal();
-
-    try
-    {
-        asio::io_context io_context;
-
-        connection = ::epilogue::Connection::create(io_context);
-        connection->connect(connect_dialog.host(), connect_dialog.port());
-    }
-    catch (std::exception& e)
-    {
-        std::cerr << e.what() << "\n";
-        wxMessageBox(e.what(), "failed to establish connection",
-            wxOK | wxICON_INFORMATION);
-        exit(-1);
-    }
+    gui::Connect_Dialog* connect_dialog = new gui::Connect_Dialog(this);
+    connect_dialog->ShowModal();
 
     std::cout << "<*> connection successful\n";
 
@@ -51,20 +37,15 @@ gui::Main_Frame::Main_Frame(wxWindow* parent, wxWindowID id,
 
     this->Centre(wxBOTH);
 
-    std::thread receive_thread(gui::receive_messages, connection);
-    receive_thread.detach();
-
+    std::thread read_thread(gui::receive_messages);
     std::thread statusbar_thread(gui::update_statusbar, statusbar,
         &channel_context);
+    read_thread.detach();
     statusbar_thread.detach();
 }
 
 gui::Main_Frame::~Main_Frame()
 {
-    delete window_sizer;
-    window_sizer = nullptr;
-    delete main_notebook;
-    main_notebook = nullptr;
 }
 
 gui::Connect_Dialog::Connect_Dialog(wxWindow* parent, wxWindowID id,
@@ -72,22 +53,49 @@ gui::Connect_Dialog::Connect_Dialog(wxWindow* parent, wxWindowID id,
     : wxDialog(parent, id, title, pos, size, style)
 {
     this->SetSizeHints(wxDefaultSize, wxDefaultSize);
+    wxBoxSizer* window_sizer = new wxBoxSizer(wxVERTICAL);
 
-    wxBoxSizer* window_sizer;
-    window_sizer = new wxBoxSizer(wxVERTICAL);
-
+    // server <address:port>
+    wxBoxSizer* server_sizer = new wxBoxSizer(wxHORIZONTAL);
+    wxStaticText* server_label = new wxStaticText(this, wxID_ANY,
+        wxT("server <host:port>"), wxDefaultPosition, wxSize(180, 25));
     server_input = new wxTextCtrl(this, wxID_ANY, wxEmptyString,
-        wxDefaultPosition, wxSize(300, 25), 0 | wxTE_PROCESS_ENTER);
+        wxDefaultPosition, wxSize(300, 25), 0);
     server_input->SetFont(wxFont(-1, wxFONTFAMILY_TELETYPE, wxFONTSTYLE_NORMAL,
         wxFONTWEIGHT_NORMAL, false, wxT("Monospace")));
+    server_sizer->Add(server_label, 0, wxALL, 0);
+    server_sizer->Add(server_input, 0, wxALL, 0);
 
-    window_sizer->Add(server_input, 0, wxALL, 5);
+    // nick/user
+    wxBoxSizer* nick_sizer = new wxBoxSizer(wxHORIZONTAL);
+    wxStaticText* nick_label = new wxStaticText(this, wxID_ANY,
+        wxT("nick (same as user)"), wxDefaultPosition, wxSize(180, 25));
+    nick_input = new wxTextCtrl(this, wxID_ANY, wxEmptyString,
+        wxDefaultPosition, wxSize(300, 25), 0);
+    nick_input->SetFont(wxFont(-1, wxFONTFAMILY_TELETYPE, wxFONTSTYLE_NORMAL,
+        wxFONTWEIGHT_NORMAL, false, wxT("Monospace")));
+    nick_sizer->Add(nick_label, 0, wxALL, 0);
+    nick_sizer->Add(nick_input, 0, wxALL, 0);
+
+    // real name
+    wxBoxSizer* realname_sizer = new wxBoxSizer(wxHORIZONTAL);
+    wxStaticText* realname_label = new wxStaticText(this, wxID_ANY,
+        wxT("realname"), wxDefaultPosition, wxSize(180, 25));
+    realname_input = new wxTextCtrl(this, wxID_ANY, wxEmptyString,
+        wxDefaultPosition, wxSize(300, 25), 0);
+    realname_input->SetFont(wxFont(-1, wxFONTFAMILY_TELETYPE,
+        wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxT("Monospace")));
+    realname_sizer->Add(realname_label, 0, wxALL, 0);
+    realname_sizer->Add(realname_input, 0, wxALL, 0);
 
     connect_button = new wxButton(this, wxID_ANY, _("connect"),
         wxDefaultPosition, wxSize(-1, 25), 0);
     connect_button->SetFont(wxFont(-1, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL,
         wxFONTWEIGHT_NORMAL, false, wxEmptyString));
 
+    window_sizer->Add(server_sizer, 0, wxALL, 5);
+    window_sizer->Add(nick_sizer, 0, wxALL, 5);
+    window_sizer->Add(realname_sizer, 0, wxALL, 5);
     window_sizer->Add(connect_button, 0, wxALL | wxEXPAND, 5);
 
     this->SetSizer(window_sizer);
@@ -95,10 +103,16 @@ gui::Connect_Dialog::Connect_Dialog(wxWindow* parent, wxWindowID id,
     window_sizer->Fit(this);
 
     connect_button->Bind(wxEVT_BUTTON, &Connect_Dialog::connect, this);
-    server_input->Bind(wxEVT_COMMAND_TEXT_ENTER, &Connect_Dialog::connect,
-        this);
+    this->Bind(wxEVT_CLOSE_WINDOW, &Connect_Dialog::on_close, this);
 
     this->Centre(wxBOTH);
+}
+
+void gui::Connect_Dialog::on_close(wxCloseEvent& event)
+{
+    // terminate application
+    Destroy();
+    std::terminate();
 }
 
 gui::Connect_Dialog::~Connect_Dialog()
@@ -145,7 +159,7 @@ void gui::Panel::send_message(wxCommandEvent& event)
     });
 }
 
-static void gui::receive_messages(::epilogue::Connection::pointer connection)
+static void gui::receive_messages()
 {
     try
     {
@@ -209,7 +223,11 @@ void gui::Connect_Dialog::connect(wxCommandEvent& event)
 {
     // check input isn't empty
     if (server_input->IsEmpty())
+    {
+        wxMessageBox("Please specify server address: e.g. localhost:1234.",
+            "server is empty", wxOK | wxICON_INFORMATION);
         return;
+    }
 
     std::string connection_string = server_input->GetValue().ToStdString();
 
@@ -220,23 +238,89 @@ void gui::Connect_Dialog::connect(wxCommandEvent& event)
         if (c == ':')
             n_colon++;
 
+    // check server input contains a colon
     if (n_colon != 1)
+    {
+        wxMessageBox("Server needs a port (missing colon).", "invalid server",
+            wxOK | wxICON_INFORMATION);
         return;
+    }
 
-    // find position of colon
-    int colon_pos = connection_string.find(':');
-    // get host
-    host_ = connection_string.substr(0, colon_pos);
-    // get port
-    port_ = connection_string.substr(++colon_pos);
+    int colon_pos = connection_string.find(':'); // find position of colon
+    std::string host = connection_string.substr(0, colon_pos);
+    std::string port = connection_string.substr(++colon_pos);
 
     // check connection string specifies a valid port
-    if (!std::atoi(port_.c_str()))
+    if (!std::atoi(port.c_str()))
+    {
+        wxMessageBox("Port must be a number.", "invalid port",
+            wxOK | wxICON_INFORMATION);
         return;
+    }
+
+    // check nick is given
+    if (nick_input->IsEmpty())
+    {
+        wxMessageBox("Please specify a nick.", "nick is empty",
+            wxOK | wxICON_INFORMATION);
+        return;
+    }
+
+    // check realname is given
+    if (realname_input->IsEmpty())
+    {
+        wxMessageBox("Please specify realname.", "realname is empty",
+            wxOK | wxICON_INFORMATION);
+        return;
+    }
 
     std::cout << "<*> connecting to " << connection_string << "\n";
-    std::cout << "\t-> " << host_ << "\n";
-    std::cout << "\t-> " << port_ << "\n";
+    std::cout << "\t-> " << host << "\n";
+    std::cout << "\t-> " << port << "\n";
+
+    try
+    {
+        if (!connected)
+        {
+            connection = ::epilogue::Connection::create(io_context);
+            connection->connect(host, port);
+            connected = true;
+
+            // lock server input
+            server_input->Disable();
+        }
+
+        // attempt to authenticate with server
+        std::string nick = nick_input->GetValue().ToStdString();
+        std::string realname = realname_input->GetValue().ToStdString();
+        connection->send_message("NICK :" + nick + "\r\n");
+        connection->send_message("USER " + nick + " 0 * :" + realname + "\r\n");
+
+        std::vector<std::string> received_messages;
+
+        do
+        {
+            received_messages = connection->read_messages();
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        } while (received_messages.empty());
+
+        epilogue::Command command;
+        command = epilogue::process_message(received_messages.front());
+
+        if (command.cmd_id != epilogue::Command_ID::WELCOME)
+        {
+            wxMessageBox(command.body, "invalid username",
+                wxOK | wxICON_INFORMATION);
+            return;
+        }
+    }
+    catch (std::exception& e)
+    {
+        std::cerr << e.what() << "\n";
+        wxMessageBox(e.what(), "failed to establish connection",
+            wxOK | wxICON_INFORMATION);
+        return;
+    }
 
     EndModal(0);
 }

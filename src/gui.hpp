@@ -21,6 +21,11 @@
 
 namespace gui
 {
+    asio::io_context io_context;
+    ::epilogue::Connection::pointer connection;
+    std::thread read_thread;
+    std::thread send_thread;
+
     class Main_Frame : public wxFrame
     {
     protected:
@@ -30,9 +35,6 @@ namespace gui
         wxStatusBar* statusbar;
         wxBoxSizer* window_sizer;
 
-        ::epilogue::Connection::pointer connection;
-        std::thread read_thread;
-        std::thread send_thread;
         std::string channel_context = "*global*";
 
     public:
@@ -42,10 +44,10 @@ namespace gui
             const wxSize& size = wxSize(800, 600),
             long style = wxDEFAULT_FRAME_STYLE | wxTAB_TRAVERSAL);
 
-            ::epilogue::Connection::pointer get_connection()
-            {
-                return connection;
-            }
+        ::epilogue::Connection::pointer get_connection()
+        {
+            return connection;
+        }
 
         void join(std::string channel);
         wxAuiNotebook* get_notebook() { return main_notebook; }
@@ -79,7 +81,8 @@ namespace gui
             if (context == "*global*")
             {
                 // send QUIT message
-                main_frame->get_connection()->send_message("QUIT\r\n");
+                main_frame->get_connection()->send_message(
+                    "QUIT :goodbye!\r\n");
                 // close application
                 Destroy();
             }
@@ -87,17 +90,21 @@ namespace gui
             {
                 // send PART message
                 main_frame->get_connection()->send_message("PART " + context
-                    + "\r\n");
+                    + " :goodbye!\r\n");
             }
         }
     };
-    
+
     class Connect_Dialog : public wxDialog
     {
     protected:
         wxTextCtrl* server_input;
+        wxTextCtrl* nick_input;
+        wxTextCtrl* realname_input;
         wxButton* connect_button;
-        std::string host_, port_;
+        bool connected = false;
+
+        void on_close(wxCloseEvent& event);
 
     public:    
         Connect_Dialog(wxWindow* parent, wxWindowID id = wxID_ANY,
@@ -107,8 +114,6 @@ namespace gui
             long style = wxDEFAULT_DIALOG_STYLE);
 
         void connect(wxCommandEvent& event);
-        std::string host() { return host_; }
-        std::string port() { return port_; }
 
         ~Connect_Dialog();
     };
@@ -119,7 +124,7 @@ namespace gui
         bool OnInit() override;
     };
 
-    static void receive_messages(::epilogue::Connection::pointer connection);
+    static void receive_messages();
 
     static void update_statusbar(wxStatusBar* statusbar,
         std::string* channel_context);

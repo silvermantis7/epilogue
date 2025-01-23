@@ -9,6 +9,8 @@ namespace epilogue
         PRIVMSG,
         JOIN,
         WELCOME,
+        NICK_TAKEN,
+        ERRONEOUS_NICK,
     };
 
     std::string nick;
@@ -52,6 +54,14 @@ epilogue::Command epilogue::process_message(std::string message)
             command_id = epilogue::Command_ID::WELCOME;
             epilogue::nick = words.at(2);
             break;
+        case 433:
+            command_id = epilogue::Command_ID::NICK_TAKEN;
+            command_body = message.substr(message.find(':', 1) + 1);
+            break;
+        case 432:
+            command_id = epilogue::Command_ID::ERRONEOUS_NICK;
+            command_body = message.substr(message.find(':', 1) + 1);
+            break;
         default:
             break;
         }
@@ -93,7 +103,7 @@ epilogue::Command epilogue::process_message(std::string message)
         command_id,
         command_body,
         channel_context,
-        sender.c_str()
+        sender
     };
 
     std::cout << "$ { "
