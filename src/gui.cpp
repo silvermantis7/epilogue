@@ -58,9 +58,10 @@ gui::Connect_Dialog::Connect_Dialog(wxWindow* parent, wxWindowID id,
     // server <address:port>
     wxBoxSizer* server_sizer = new wxBoxSizer(wxHORIZONTAL);
     wxStaticText* server_label = new wxStaticText(this, wxID_ANY,
-        wxT("server <host:port>"), wxDefaultPosition, wxSize(180, 25));
+        wxT("server <host:port>"), wxDefaultPosition, wxSize(180, -1),
+        wxALIGN_CENTER_VERTICAL);
     server_input = new wxTextCtrl(this, wxID_ANY, wxEmptyString,
-        wxDefaultPosition, wxSize(300, 25), 0);
+        wxDefaultPosition, wxSize(300, -1), 0);
     server_input->SetFont(wxFont(-1, wxFONTFAMILY_TELETYPE, wxFONTSTYLE_NORMAL,
         wxFONTWEIGHT_NORMAL, false, wxT("Monospace")));
     server_sizer->Add(server_label, 0, wxALL, 0);
@@ -69,9 +70,10 @@ gui::Connect_Dialog::Connect_Dialog(wxWindow* parent, wxWindowID id,
     // nick/user
     wxBoxSizer* nick_sizer = new wxBoxSizer(wxHORIZONTAL);
     wxStaticText* nick_label = new wxStaticText(this, wxID_ANY,
-        wxT("nick (same as user)"), wxDefaultPosition, wxSize(180, 25));
+        wxT("nick (same as user)"), wxDefaultPosition, wxSize(180, -1),
+        wxALIGN_CENTER_VERTICAL);
     nick_input = new wxTextCtrl(this, wxID_ANY, wxEmptyString,
-        wxDefaultPosition, wxSize(300, 25), 0);
+        wxDefaultPosition, wxSize(300, -1), 0);
     nick_input->SetFont(wxFont(-1, wxFONTFAMILY_TELETYPE, wxFONTSTYLE_NORMAL,
         wxFONTWEIGHT_NORMAL, false, wxT("Monospace")));
     nick_sizer->Add(nick_label, 0, wxALL, 0);
@@ -80,16 +82,17 @@ gui::Connect_Dialog::Connect_Dialog(wxWindow* parent, wxWindowID id,
     // real name
     wxBoxSizer* realname_sizer = new wxBoxSizer(wxHORIZONTAL);
     wxStaticText* realname_label = new wxStaticText(this, wxID_ANY,
-        wxT("realname"), wxDefaultPosition, wxSize(180, 25));
+        wxT("realname"), wxDefaultPosition, wxSize(180, -1),
+        wxALIGN_CENTER_VERTICAL);
     realname_input = new wxTextCtrl(this, wxID_ANY, wxEmptyString,
-        wxDefaultPosition, wxSize(300, 25), 0);
+        wxDefaultPosition, wxSize(300, -1), 0);
     realname_input->SetFont(wxFont(-1, wxFONTFAMILY_TELETYPE,
         wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxT("Monospace")));
     realname_sizer->Add(realname_label, 0, wxALL, 0);
     realname_sizer->Add(realname_input, 0, wxALL, 0);
 
     connect_button = new wxButton(this, wxID_ANY, _("connect"),
-        wxDefaultPosition, wxSize(-1, 25), 0);
+        wxDefaultPosition, wxSize(-1, -1), 0);
     connect_button->SetFont(wxFont(-1, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL,
         wxFONTWEIGHT_NORMAL, false, wxEmptyString));
 
@@ -373,7 +376,7 @@ gui::Panel::Panel(std::string context, wxAuiNotebook* notebook)
     panel_sizer->Add(message_display, 1, wxEXPAND | wxALL, 5);
     // create message box
     message_box = new wxTextCtrl(this, wxID_ANY, wxEmptyString,
-        wxDefaultPosition, wxSize(-1, 25), 0 | wxTE_PROCESS_ENTER);
+        wxDefaultPosition, wxSize(-1, -1), 0 | wxTE_PROCESS_ENTER);
     message_box->SetFont(wxFont(-1, wxFONTFAMILY_TELETYPE, wxFONTSTYLE_NORMAL,
         wxFONTWEIGHT_NORMAL, false, wxT("Monospace")));
     panel_sizer->Add(message_box, 0, wxALL | wxEXPAND, 5);
