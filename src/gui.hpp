@@ -78,19 +78,16 @@ namespace gui
             // remove self from channel_logs hashmap
             channel_logs.erase(context);
 
-            if (context == "*global*")
-            {
-                // send QUIT message
-                main_frame->get_connection()->send_message(
-                    "QUIT :goodbye!\r\n");
-                // close application
-                Destroy();
-            }
-            else
+            if (context != "*global*")
             {
                 // send PART message
                 main_frame->get_connection()->send_message("PART " + context
                     + " :goodbye!\r\n");
+            }
+            else
+            {
+                // close application
+                main_frame->Close();
             }
         }
     };

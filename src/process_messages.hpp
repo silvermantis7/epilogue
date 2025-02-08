@@ -33,6 +33,7 @@ epilogue::Command epilogue::process_message(std::string message)
     {
         std::string word;
         std::stringstream ss(message);
+
         while (std::getline(ss, word, ' '))
         {
             words.push_back(word);
@@ -46,6 +47,7 @@ epilogue::Command epilogue::process_message(std::string message)
 
     /* determine type of command */
     int cmd_num = std::atoi(words.at(1).c_str());
+
     if (cmd_num)
     {
         switch (cmd_num)
@@ -66,6 +68,7 @@ epilogue::Command epilogue::process_message(std::string message)
             break;
         }
     }
+
     // server ping
     else if (words.at(0) == "PING")
     {
@@ -80,8 +83,8 @@ epilogue::Command epilogue::process_message(std::string message)
         channel_context = words.at(2);
         sender = message.substr(1, message.find('!', 1) - 1);
 
-        if (sender == nick) channel_context = "*none*";
-        else if (channel_context == nick) channel_context = sender;
+        if (sender == nick) { channel_context = "*none*"; }
+        else if (channel_context == nick) { channel_context = sender; }
 
         sender = "<" + sender + ">";
     }
@@ -93,10 +96,15 @@ epilogue::Command epilogue::process_message(std::string message)
 
         command_id = epilogue::Command_ID::JOIN;
         command_body = channel + " <- " + nick_joined;
+
         if (nick_joined != nick)
+        {
             channel_context = channel;
+        }
         else
+        {
             gui::main_frame->join(channel);
+        }
     }
 
     epilogue::Command command = {

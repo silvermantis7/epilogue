@@ -21,6 +21,17 @@ namespace epilogue
         void display_message(const asio::error_code& error,
             std::size_t bytes_transferred);
 
+        void close()
+        {
+            send_mutex.lock();
+            socket.shutdown(asio::ip::tcp::socket::shutdown_both);
+            socket.close();
+            closed_ = true;
+            send_mutex.unlock();
+        }
+
+        bool closed() { return closed_; }
+
     private:
         Connection(asio::io_context& io_context)
             : io_context_{io_context}
@@ -34,9 +45,13 @@ namespace epilogue
         tcp::socket socket;
 
         std::vector<std::string> channels = { "*global*" };
+        
+        std::mutex send_mutex;
 
         // used for when message recieved is too big for read_messages() buffer
         std::string read_overflow = "";
+
+        bool closed_ = false;
     };
 }
 
@@ -48,7 +63,7 @@ void epilogue::Connection::connect(std::string host, std::string port)
 
 std::vector<std::string> epilogue::Connection::read_messages()
 {
-    const unsigned int READ_BUF_SIZE = 512;
+    constexpr unsigned int READ_BUF_SIZE = 512;
 
     std::array<char, READ_BUF_SIZE> buf;
     std::error_code error;
@@ -57,14 +72,18 @@ std::vector<std::string> epilogue::Connection::read_messages()
     try
     {
         len = socket.read_some(asio::buffer(buf), error);
+
+        if (!len)
+        {
+            return { };
+        }
     }
     catch (std::exception& e)
     {
-        return {};
+        return { };
     }
 
-    if (error)
-        throw std::system_error(error);
+    if (error) { return { }; }
 
     std::string buffer_data = read_overflow + std::string(buf.data(), len);
     read_overflow = "";
@@ -92,8 +111,18 @@ std::vector<std::string> epilogue::Connection::read_messages()
 void epilogue::Connection::send_message(std::string message)
 {
     std::error_code ignored_error;
-    asio::write(socket, asio::buffer(message), ignored_error);
+    
+    send_mutex.lock();
+
+    if (!closed_)
+    {
+        asio::write(socket, asio::buffer(message), ignored_error);
+    }
+
+    send_mutex.unlock();
 
     if (ignored_error)
+    {
         throw std::system_error(ignored_error);
+    }
 }

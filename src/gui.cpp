@@ -16,9 +16,12 @@ gui::Main_Frame::Main_Frame(wxWindow* parent, wxWindowID id,
     : wxFrame(parent, id, title, pos, size, style)
 {
     gui::Connect_Dialog* connect_dialog = new gui::Connect_Dialog(this);
-    connect_dialog->ShowModal();
-
-    std::cout << "<*> connection successful\n";
+    
+    if (connect_dialog->ShowModal())
+    {
+        Destroy();
+        return;
+    }
 
     this->SetSizeHints(wxDefaultSize, wxDefaultSize);
 
@@ -46,6 +49,14 @@ gui::Main_Frame::Main_Frame(wxWindow* parent, wxWindowID id,
 
 gui::Main_Frame::~Main_Frame()
 {
+    if (connection)
+    {
+        // send QUIT message
+        connection->send_message("QUIT :goodbye!\r\n");
+
+        // close connection
+        connection->close();
+    }
 }
 
 gui::Connect_Dialog::Connect_Dialog(wxWindow* parent, wxWindowID id,
@@ -113,9 +124,7 @@ gui::Connect_Dialog::Connect_Dialog(wxWindow* parent, wxWindowID id,
 
 void gui::Connect_Dialog::on_close(wxCloseEvent& event)
 {
-    // terminate application
-    Destroy();
-    std::terminate();
+    EndModal(-1);
 }
 
 gui::Connect_Dialog::~Connect_Dialog()
@@ -125,7 +134,9 @@ gui::Connect_Dialog::~Connect_Dialog()
 void gui::Panel::send_message(wxCommandEvent& event)
 {
     if (message_box->IsEmpty())
+    {
         return;
+    }
 
     gui::main_frame->CallAfter([this]
     {
@@ -149,7 +160,9 @@ void gui::Panel::send_message(wxCommandEvent& event)
             message_display->SetColumnWidth(1, wxLIST_AUTOSIZE);
 
             if (is_privmsg)
+            {
                 message = "PRIVMSG " + context + " :" + message;
+            }
 
             gui::main_frame->get_connection()->send_message(message + "\r\n");
         }
@@ -168,6 +181,11 @@ static void gui::receive_messages()
     {
         for (;;)
         {
+            if (connection->closed())
+            {
+                break;
+            }
+
             for (std::string message : connection->read_messages())
             {
                 message.pop_back(); // remove '\r' character
@@ -180,7 +198,10 @@ static void gui::receive_messages()
                 };
 
                 if (command.cmd_id == epilogue::Command_ID::PING)
+                {
                     connection->send_message("PONG " + command.body + "\r\n");
+                }
+
                 if (std::find(loggable.begin(), loggable.end(), command.cmd_id)
                     != loggable.end())
                 {
@@ -202,7 +223,7 @@ static void gui::receive_messages()
                         }
 
                         wxListCtrl* message_display =
-                        Panel::channel_logs[command.context];
+                            Panel::channel_logs[command.context];
 
                         int n_rows = message_display->GetItemCount();
 
@@ -238,8 +259,12 @@ void gui::Connect_Dialog::connect(wxCommandEvent& event)
     int n_colon = 0;
 
     for (char c : connection_string)
+    {
         if (c == ':')
+        {
             n_colon++;
+        }
+    }
 
     // check server input contains a colon
     if (n_colon != 1)
@@ -289,6 +314,8 @@ void gui::Connect_Dialog::connect(wxCommandEvent& event)
             connection->connect(host, port);
             connected = true;
 
+            std::cout << "<*> connection successful\n";
+
             // lock server input
             server_input->Disable();
         }
@@ -305,7 +332,8 @@ void gui::Connect_Dialog::connect(wxCommandEvent& event)
         {
             received_messages = connection->read_messages();
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        } while (received_messages.empty());
+        }
+        while (received_messages.empty());
 
         epilogue::Command command;
         command = epilogue::process_message(received_messages.front());
