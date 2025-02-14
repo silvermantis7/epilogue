@@ -4,6 +4,9 @@
 
 wxIMPLEMENT_APP(gui::Epilogue);
 
+// pointers to each message display, key is channel name/context
+std::unordered_map<std::string, gui::Panel*> channel_logs = { };
+
 bool gui::Epilogue::OnInit()
 {
     gui::main_frame = new gui::Main_Frame(nullptr);
@@ -16,7 +19,7 @@ gui::Main_Frame::Main_Frame(wxWindow* parent, wxWindowID id,
     : wxFrame(parent, id, title, pos, size, style)
 {
     gui::Connect_Dialog* connect_dialog = new gui::Connect_Dialog(this);
-    
+
     if (connect_dialog->ShowModal())
     {
         Destroy();
@@ -153,11 +156,7 @@ void gui::Panel::send_message(wxCommandEvent& event)
                 is_privmsg &= (message.at(0) == '/');
             }
 
-            int n_rows = message_display->GetItemCount();
-            message_display->InsertItem(n_rows, "-->");
-            message_display->SetItem(n_rows, 1, message);
-            message_display->SetColumnWidth(0, wxLIST_AUTOSIZE);
-            message_display->SetColumnWidth(1, wxLIST_AUTOSIZE);
+            log_message("-->", message);
 
             if (is_privmsg)
             {
@@ -213,24 +212,21 @@ static void gui::receive_messages()
 
                     main_frame->CallAfter([&, command]
                     {
+                        Panel* panel;
+
                         // check if command context has a panel
-                        if (auto panel = Panel::channel_logs.find(
-                            command.context);
-                            panel == Panel::channel_logs.end())
+                        if (channel_logs.find(command.context)
+                            != channel_logs.end())
                         {
-                            new Panel(command.context,
+                            panel = channel_logs[command.context];
+                        }
+                        else
+                        {
+                            panel = new Panel(command.context,
                                 main_frame->get_notebook());
                         }
 
-                        wxListCtrl* message_display =
-                            Panel::channel_logs[command.context];
-
-                        int n_rows = message_display->GetItemCount();
-
-                        message_display->InsertItem(n_rows, command.sender);
-                        message_display->SetItem(n_rows, 1, command.body);
-                        message_display->SetColumnWidth(0, wxLIST_AUTOSIZE);
-                        message_display->SetColumnWidth(1, wxLIST_AUTOSIZE);
+                        panel->log_message(command.sender, command.body);
                     });
                 }
             }
@@ -394,31 +390,103 @@ gui::Panel::Panel(std::string context, wxAuiNotebook* notebook)
     panel_sizer = new wxBoxSizer(wxVERTICAL);
     this->context = context;
     this->SetSizer(panel_sizer);
-    // create message display
-    message_display = new wxListCtrl(this, wxID_ANY, wxDefaultPosition,
-        wxDefaultSize, wxLC_REPORT | wxLC_NO_HEADER);
-    message_display->SetFont(wxFont(-1, wxFONTFAMILY_TELETYPE,
-        wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxT("Monospace")));
-    message_display->InsertColumn(0, "user", wxLIST_FORMAT_RIGHT);
-    message_display->InsertColumn(1, "message", wxLIST_FORMAT_LEFT);
-    panel_sizer->Add(message_display, 1, wxEXPAND | wxALL, 5);
+
+    // create message window
+    message_display = new wxScrolledWindow(this, wxID_ANY, wxDefaultPosition,
+        wxDefaultSize, wxVSCROLL | wxEXPAND);
+    message_display->SetScrollRate(0, 1);
+    message_display->SetBackgroundColour(wxColour(0x00, 0x00, 0x00));
+    panel_sizer->Add(message_display, 1, wxALL | wxEXPAND, 5);
+
+    // create message sizer
+    message_sizer = new wxFlexGridSizer(0, 2, 2, 5);
+    message_sizer->SetFlexibleDirection(wxBOTH);
+    message_display->SetSizer(message_sizer);
+    message_sizer->FitInside(message_display);
+
     // create message box
     message_box = new wxTextCtrl(this, wxID_ANY, wxEmptyString,
         wxDefaultPosition, wxSize(-1, -1), 0 | wxTE_PROCESS_ENTER);
     message_box->SetFont(wxFont(-1, wxFONTFAMILY_TELETYPE, wxFONTSTYLE_NORMAL,
         wxFONTWEIGHT_NORMAL, false, wxT("Monospace")));
     panel_sizer->Add(message_box, 0, wxALL | wxEXPAND, 5);
+
     // create page
     this->Layout();
     panel_sizer->Fit(this);
     notebook->AddPage(this, _(context), false, wxNullBitmap);
+
     // bind message input to send_message
     message_box->Bind(wxEVT_COMMAND_TEXT_ENTER, &gui::Panel::send_message,
         this);
     message_box->SetFocus();
 
     // add message display to hashmap of message logs
-    channel_logs[context] = message_display;
+    channel_logs[context] = this;
 }
 
-std::unordered_map<std::string, wxListCtrl*> gui::Panel::channel_logs = { };
+void gui::Panel::log_message(const std::string& sender,
+    const std::string& message)
+{
+    // check if scrollbar is at the bottom
+    int scroll_pos = message_display->GetScrollPos(wxVERTICAL);
+    int scroll_range = message_display->GetScrollRange(wxVERTICAL);
+    int thumb_size = message_display->GetScrollThumb(wxVERTICAL);
+    bool autoscroll = (scroll_pos + thumb_size == scroll_range);
+
+    wxStaticText* sender_label = new wxStaticText(message_display, wxID_ANY,
+        sender);
+    wxStaticText* message_label = new Message_Label(message_display, message);
+    sender_label->SetForegroundColour(wxColour(0xFF, 0xFF, 0xFF));
+    message_label->SetForegroundColour(wxColour(0xFF, 0xFF, 0xFF));
+
+    message_sizer->Add(sender_label, 0, wxALL, 2);
+    message_sizer->Add(message_label, 0, wxALL, 2);
+
+    message_sizer->FitInside(message_display);
+
+    if (autoscroll)
+    {
+        // scroll down to new message
+        scroll_range = message_display->GetScrollRange(wxVERTICAL);
+        thumb_size = message_display->GetScrollThumb(wxVERTICAL);
+        message_display->Scroll(0, scroll_range - thumb_size);
+    }
+}
+
+gui::Panel::~Panel()
+{
+    // remove self from channel_logs hashmap
+    channel_logs.erase(context);
+
+    if (context != "*global*")
+    {
+        // send PART message
+        main_frame->get_connection()->send_message("PART " + context
+            + " :goodbye!\r\n");
+    }
+    else
+    {
+        // close application
+        main_frame->Close();
+    }
+}
+
+gui::Message_Label::Message_Label(wxScrolledWindow* message_display,
+    const std::string& message)
+    : wxStaticText(message_display, wxID_ANY, message)
+    , message_display{message_display}
+    , message{message}
+{
+    wrap();
+
+    Bind(wxEVT_SIZE, &gui::Message_Label::wrap, this);
+}
+
+void gui::Message_Label::wrap()
+{
+    int width, height, x_pos, y_pos;
+    message_display->GetSize(&width, &height);
+    message_display->GetPosition(&x_pos, &y_pos);
+    Wrap(width - x_pos - 40);
+}

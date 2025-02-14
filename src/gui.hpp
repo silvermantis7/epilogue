@@ -4,7 +4,7 @@
 #include <wx/xrc/xmlres.h>
 #include <wx/intl.h>
 
-#include <wx/listctrl.h>
+#include <wx/grid.h>
 #include <wx/gdicmn.h>
 #include <wx/font.h>
 #include <wx/colour.h>
@@ -60,7 +60,8 @@ namespace gui
     class Panel : public wxPanel
     {
     protected:
-        wxListCtrl* message_display;
+        wxScrolledWindow* message_display;
+        wxFlexGridSizer* message_sizer;
         wxTextCtrl* message_box;
         wxBoxSizer* panel_sizer;
         std::string context;
@@ -70,26 +71,9 @@ namespace gui
 
         void send_message(wxCommandEvent& event);
 
-        // pointers to each message display, key is channel name/context
-        static std::unordered_map<std::string, wxListCtrl*> channel_logs;
-
-        ~Panel()
-        {
-            // remove self from channel_logs hashmap
-            channel_logs.erase(context);
-
-            if (context != "*global*")
-            {
-                // send PART message
-                main_frame->get_connection()->send_message("PART " + context
-                    + " :goodbye!\r\n");
-            }
-            else
-            {
-                // close application
-                main_frame->Close();
-            }
-        }
+        ~Panel();
+        
+        void log_message(const std::string& sender, const std::string& message);
     };
 
     class Connect_Dialog : public wxDialog
@@ -125,4 +109,17 @@ namespace gui
 
     static void update_statusbar(wxStatusBar* statusbar,
         std::string* channel_context);
+    
+    struct Message_Label : public wxStaticText
+    {
+        Message_Label(wxScrolledWindow* message_display,
+            const std::string& message);
+
+    protected:
+        wxScrolledWindow* message_display = nullptr;
+        wxFlexGridSizer* message_sizer = nullptr;
+        void wrap();
+        void wrap(wxSizeEvent& size_event) { wrap(); }
+        std::string message;
+    };
 }
