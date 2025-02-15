@@ -1,3 +1,5 @@
+#pragma once
+
 #include <wx/wx.h>
 
 #include <wx/artprov.h>
@@ -22,7 +24,7 @@
 namespace gui
 {
     asio::io_context io_context;
-    ::epilogue::Connection::pointer connection;
+    epilogue::Connection::pointer connection;
     std::thread read_thread;
     std::thread send_thread;
 
@@ -72,7 +74,7 @@ namespace gui
         void send_message(wxCommandEvent& event);
 
         ~Panel();
-        
+
         void log_message(const std::string& sender, const std::string& message);
     };
 
@@ -87,7 +89,7 @@ namespace gui
 
         void on_close(wxCloseEvent& event);
 
-    public:    
+    public:
         Connect_Dialog(wxWindow* parent, wxWindowID id = wxID_ANY,
             const wxString& title = _("connect to server"),
             const wxPoint& pos = wxDefaultPosition,
@@ -109,7 +111,7 @@ namespace gui
 
     static void update_statusbar(wxStatusBar* statusbar,
         std::string* channel_context);
-    
+
     struct Message_Label : public wxStaticText
     {
         Message_Label(wxScrolledWindow* message_display,

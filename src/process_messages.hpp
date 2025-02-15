@@ -1,3 +1,5 @@
+#pragma once
+
 #include <unordered_map>
 
 namespace epilogue
@@ -56,14 +58,17 @@ epilogue::Command epilogue::process_message(std::string message)
             command_id = epilogue::Command_ID::WELCOME;
             epilogue::nick = words.at(2);
             break;
+
         case 433:
             command_id = epilogue::Command_ID::NICK_TAKEN;
             command_body = message.substr(message.find(':', 1) + 1);
             break;
+
         case 432:
             command_id = epilogue::Command_ID::ERRONEOUS_NICK;
             command_body = message.substr(message.find(':', 1) + 1);
             break;
+
         default:
             break;
         }
@@ -91,20 +96,11 @@ epilogue::Command epilogue::process_message(std::string message)
     // channel join
     else if (words.at(1) == "JOIN")
     {
-        std::string channel = words.at(2);
-        std::string nick_joined = message.substr(1, message.find('!') - 1);
+        channel_context = words.at(2);
+        sender = message.substr(1, message.find('!') - 1);
 
         command_id = epilogue::Command_ID::JOIN;
-        command_body = channel + " <- " + nick_joined;
-
-        if (nick_joined != nick)
-        {
-            channel_context = channel;
-        }
-        else
-        {
-            gui::main_frame->join(channel);
-        }
+        command_body = channel_context + " <- " + sender;
     }
 
     epilogue::Command command = {

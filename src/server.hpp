@@ -3,6 +3,8 @@
 #include <iostream>
 #include <asio.hpp>
 
+#include "process_messages.hpp"
+
 using asio::ip::tcp;
 
 namespace epilogue
@@ -16,7 +18,7 @@ namespace epilogue
         }
 
         void connect(std::string host, std::string port);
-        std::vector<std::string> read_messages();
+        std::vector<epilogue::Command> read_messages();
         void send_message(std::string message);
         void display_message(const asio::error_code& error,
             std::size_t bytes_transferred);
@@ -45,7 +47,7 @@ namespace epilogue
         tcp::socket socket;
 
         std::vector<std::string> channels = { "*global*" };
-        
+
         std::mutex send_mutex;
 
         // used for when message recieved is too big for read_messages() buffer
@@ -61,7 +63,7 @@ void epilogue::Connection::connect(std::string host, std::string port)
     asio::connect(socket, endpoints);
 }
 
-std::vector<std::string> epilogue::Connection::read_messages()
+std::vector<epilogue::Command> epilogue::Connection::read_messages()
 {
     constexpr unsigned int READ_BUF_SIZE = 512;
 
@@ -90,11 +92,23 @@ std::vector<std::string> epilogue::Connection::read_messages()
 
     std::stringstream ss(buffer_data);
     std::string message;
-    std::vector<std::string> messages;
+    std::vector<epilogue::Command> messages;
 
     while(std::getline(ss, message, '\n'))
     {
-        messages.push_back(message);
+        if (message.back() == '\r')
+        {
+            message.pop_back();
+        }
+
+        epilogue::Command command = epilogue::process_message(message);
+
+        if (command.cmd_id == epilogue::Command_ID::PING)
+        {
+            send_message("PONG " + command.body + "\r\n");
+        }
+
+        messages.push_back(command);
         std::cout << ">>> " << message << "\n";
     }
 
@@ -111,7 +125,7 @@ std::vector<std::string> epilogue::Connection::read_messages()
 void epilogue::Connection::send_message(std::string message)
 {
     std::error_code ignored_error;
-    
+
     send_mutex.lock();
 
     if (!closed_)

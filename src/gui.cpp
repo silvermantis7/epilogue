@@ -1,6 +1,6 @@
-#include "gui.hpp"
-#include "process_messages.hpp"
 #include <thread>
+
+#include "gui.hpp"
 
 wxIMPLEMENT_APP(gui::Epilogue);
 
@@ -185,26 +185,39 @@ static void gui::receive_messages()
                 break;
             }
 
-            for (std::string message : connection->read_messages())
+            for (epilogue::Command command : connection->read_messages())
             {
-                message.pop_back(); // remove '\r' character
-                epilogue::Command command = epilogue::process_message(message);
-
                 // types of commands to be looged in the message display
                 static const std::vector<epilogue::Command_ID> loggable = {
                     epilogue::Command_ID::PRIVMSG,
                     epilogue::Command_ID::JOIN
                 };
 
-                if (command.cmd_id == epilogue::Command_ID::PING)
+                switch (command.cmd_id)
                 {
-                    connection->send_message("PONG " + command.body + "\r\n");
+                case epilogue::Command_ID::JOIN:
+                    if (command.sender == epilogue::nick)
+                    {
+                        main_frame->join(command.context);
+                        command.body = "joined [" + command.context + "]";
+                        command.context = "*global*";
+                        command.sender = "*.*";
+                    }
+
+                    break;
+
+                default:
+                    break;
                 }
 
                 if (std::find(loggable.begin(), loggable.end(), command.cmd_id)
                     != loggable.end())
                 {
-                    if (command.context == "*none*") break;
+                    if (command.context == "*none*")
+                    {
+                        break;
+                    }
+
                     wxWindow* notebook
                         = gui::main_frame->get_notebook()->GetCurrentPage();
 
@@ -322,23 +335,27 @@ void gui::Connect_Dialog::connect(wxCommandEvent& event)
         connection->send_message("NICK :" + nick + "\r\n");
         connection->send_message("USER " + nick + " 0 * :" + realname + "\r\n");
 
-        std::vector<std::string> received_messages;
+        std::vector<epilogue::Command> received_messages;
 
-        do
+        for(;;)
         {
-            received_messages = connection->read_messages();
+            for (epilogue::Command command : connection->read_messages())
+            {
+                switch (command.cmd_id)
+                {
+                case epilogue::Command_ID::WELCOME:
+                    EndModal(0);
+                    return;
+
+                // case epilogue::Command_ID::1234:
+                //     wxMessageBox(command.body, "", wxOK | wxICON_INFORMAITON);
+                //     break;
+
+                default: break;
+                }
+            }
+
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        }
-        while (received_messages.empty());
-
-        epilogue::Command command;
-        command = epilogue::process_message(received_messages.front());
-
-        if (command.cmd_id != epilogue::Command_ID::WELCOME)
-        {
-            wxMessageBox(command.body, "invalid username",
-                wxOK | wxICON_INFORMATION);
-            return;
         }
     }
     catch (std::exception& e)
@@ -348,8 +365,6 @@ void gui::Connect_Dialog::connect(wxCommandEvent& event)
             wxOK | wxICON_INFORMATION);
         return;
     }
-
-    EndModal(0);
 }
 
 static void gui::update_statusbar(wxStatusBar* statusbar,
