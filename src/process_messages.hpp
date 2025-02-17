@@ -104,6 +104,12 @@ epilogue::Command epilogue::process_message(std::string message)
     else if (words.at(1) == "JOIN")
     {
         command.context = words.at(2);
+
+        if (command.context.front() == ':')
+        {
+            command.context = command.context.substr(1);
+        }
+
         command.sender = message.substr(1, message.find('!') - 1);
 
         command.cmd_id = epilogue::Command_ID::JOIN;
