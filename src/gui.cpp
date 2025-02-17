@@ -196,14 +196,14 @@ static void gui::receive_messages()
                 switch (command.cmd_id)
                 {
                 case epilogue::Command_ID::JOIN:
-                    if (command.sender == epilogue::nick)
+                    if (command.user == epilogue::nick)
                     {
                         main_frame->join(command.context);
                         command.body = "joined [" + command.context + "]";
                         command.context = "*global*";
                     }
 
-                    command.sender = "*.*";
+                    command.user = "*.*";
 
                     break;
 
@@ -240,7 +240,7 @@ static void gui::receive_messages()
                                 main_frame->get_notebook());
                         }
 
-                        panel->log_message(command.sender, command.body);
+                        panel->log_message(command.user, command.body);
                     });
                 }
             }
@@ -441,7 +441,7 @@ gui::Panel::Panel(std::string context, wxAuiNotebook* notebook)
     channel_logs[context] = this;
 }
 
-void gui::Panel::log_message(const std::string& sender,
+void gui::Panel::log_message(const std::string& user,
     const std::string& message)
 {
     // check if scrollbar is at the bottom
@@ -450,13 +450,13 @@ void gui::Panel::log_message(const std::string& sender,
     int thumb_size = message_display->GetScrollThumb(wxVERTICAL);
     bool autoscroll = (scroll_pos + thumb_size == scroll_range);
 
-    wxStaticText* sender_label = new wxStaticText(message_display, wxID_ANY,
-        sender);
+    wxStaticText* user_label = new wxStaticText(message_display, wxID_ANY,
+        user);
     wxStaticText* message_label = new Message_Label(message_display, message);
-    sender_label->SetForegroundColour(wxColour(0xFF, 0xFF, 0xFF));
+    user_label->SetForegroundColour(wxColour(0xFF, 0xFF, 0xFF));
     message_label->SetForegroundColour(wxColour(0xFF, 0xFF, 0xFF));
 
-    message_sizer->Add(sender_label, 0, wxALL, 2);
+    message_sizer->Add(user_label, 0, wxALL, 2);
     message_sizer->Add(message_label, 0, wxALL, 2);
 
     message_sizer->FitInside(message_display);

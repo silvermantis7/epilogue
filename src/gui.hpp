@@ -75,7 +75,7 @@ namespace gui
 
         ~Panel();
 
-        void log_message(const std::string& sender, const std::string& message);
+        void log_message(const std::string& user, const std::string& message);
     };
 
     class Connect_Dialog : public wxDialog

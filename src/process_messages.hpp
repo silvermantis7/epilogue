@@ -22,7 +22,7 @@ namespace epilogue
         Command_ID cmd_id = epilogue::Command_ID::UNKNOWN;
         std::string body = "";
         std::string context = "*global*";
-        std::string sender = "*.*";
+        std::string user = "*.*";
     };
 
     Command process_message(std::string message);
@@ -93,12 +93,12 @@ epilogue::Command epilogue::process_message(std::string message)
         command.body = message.substr(message.find(' ') + 1);
         command.body = command.body.substr(command.body.find(':') + 1);
         command.context = words.at(2);
-        command.sender = message.substr(1, message.find('!', 1) - 1);
+        command.user = message.substr(1, message.find('!', 1) - 1);
 
-        if (command.sender == nick) { command.context = "*none*"; }
-        else if (command.context == nick) { command.context = command.sender; }
+        if (command.user == nick) { command.context = "*none*"; }
+        else if (command.context == nick) { command.context = command.user; }
 
-        command.sender = "<" + command.sender + ">";
+        command.user = "<" + command.user + ">";
     }
 
     // channel join
@@ -111,17 +111,17 @@ epilogue::Command epilogue::process_message(std::string message)
             command.context = command.context.substr(1);
         }
 
-        command.sender = message.substr(1, message.find('!') - 1);
+        command.user = message.substr(1, message.find('!') - 1);
 
         command.cmd_id = epilogue::Command_ID::JOIN;
-        command.body = command.context + " <- " + command.sender;
+        command.body = command.context + " <- " + command.user;
     }
 
     std::cout << "$ { "
         << command.cmd_id << ", \""
         << command.body << "\", \""
         << command.context << "\", \""
-        << command.sender << "\" }\n";
+        << command.user << "\" }\n";
 
     return command;
 }
