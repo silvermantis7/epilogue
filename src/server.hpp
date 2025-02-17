@@ -105,7 +105,7 @@ std::vector<epilogue::Command> epilogue::Connection::read_messages()
 
         if (command.cmd_id == epilogue::Command_ID::PING)
         {
-            send_message("PONG " + command.body + "\r\n");
+            send_message("PONG " + command.body);
         }
 
         messages.push_back(command);
@@ -130,7 +130,7 @@ void epilogue::Connection::send_message(std::string message)
 
     if (!closed_)
     {
-        asio::write(socket, asio::buffer(message), ignored_error);
+        asio::write(socket, asio::buffer(message + "\r\n"), ignored_error);
     }
 
     send_mutex.unlock();

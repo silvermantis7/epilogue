@@ -55,7 +55,7 @@ gui::Main_Frame::~Main_Frame()
     if (connection)
     {
         // send QUIT message
-        connection->send_message("QUIT :goodbye!\r\n");
+        connection->send_message("QUIT :goodbye!");
 
         // close connection
         connection->close();
@@ -163,7 +163,7 @@ void gui::Panel::send_message(wxCommandEvent& event)
                 message = "PRIVMSG " + context + " :" + message;
             }
 
-            gui::main_frame->get_connection()->send_message(message + "\r\n");
+            gui::main_frame->get_connection()->send_message(message);
         }
         catch (std::exception& e)
         {
@@ -333,8 +333,8 @@ void gui::Connect_Dialog::connect(wxCommandEvent& event)
         // attempt to authenticate with server
         std::string nick = nick_input->GetValue().ToStdString();
         std::string realname = realname_input->GetValue().ToStdString();
-        connection->send_message("NICK :" + nick + "\r\n");
-        connection->send_message("USER " + nick + " 0 * :" + realname + "\r\n");
+        connection->send_message("NICK :" + nick);
+        connection->send_message("USER " + nick + " 0 * :" + realname);
 
         std::vector<epilogue::Command> received_messages;
 
@@ -479,7 +479,7 @@ gui::Panel::~Panel()
     {
         // send PART message
         main_frame->get_connection()->send_message("PART " + context
-            + " :goodbye!\r\n");
+            + " :goodbye!");
     }
     else
     {
