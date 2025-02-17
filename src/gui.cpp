@@ -34,7 +34,7 @@ gui::Main_Frame::Main_Frame(wxWindow* parent, wxWindowID id,
         wxDefaultSize, wxAUI_NB_DEFAULT_STYLE);
     window_sizer->Add(main_notebook, 1, wxALL | wxEXPAND, 5);
 
-    gui::Panel* global_panel = new gui::Panel("*global*", main_notebook);
+    new gui::Panel("*global*", main_notebook);
 
     this->SetSizer(window_sizer);
     this->Layout();
@@ -219,9 +219,6 @@ static void gui::receive_messages()
                         break;
                     }
 
-                    wxWindow* notebook
-                        = gui::main_frame->get_notebook()->GetCurrentPage();
-
                     using Panel = gui::Panel;
 
                     main_frame->CallAfter([&, command]
@@ -395,7 +392,7 @@ void gui::Main_Frame::join(std::string channel)
 
     gui::main_frame->CallAfter([channel, this]
     {
-        gui::Panel* new_panel = new gui::Panel(channel, main_notebook);
+        new gui::Panel(channel, main_notebook);
     });
 }
 
