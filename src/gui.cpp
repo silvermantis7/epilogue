@@ -201,8 +201,9 @@ static void gui::receive_messages()
                         main_frame->join(command.context);
                         command.body = "joined [" + command.context + "]";
                         command.context = "*global*";
-                        command.sender = "*.*";
                     }
+
+                    command.sender = "*.*";
 
                     break;
 
