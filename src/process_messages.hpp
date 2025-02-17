@@ -19,10 +19,10 @@ namespace epilogue
 
     struct Command
     {
-        Command_ID cmd_id;
-        std::string body;
-        std::string context;
-        std::string sender;
+        Command_ID cmd_id = epilogue::Command_ID::UNKNOWN;
+        std::string body = "";
+        std::string context = "*global*";
+        std::string sender = "*.*";
     };
 
     Command process_message(std::string message);
@@ -32,6 +32,7 @@ epilogue::Command epilogue::process_message(std::string message)
 {
     // split message into words
     std::vector<std::string> words;
+
     {
         std::string word;
         std::stringstream ss(message);
@@ -42,10 +43,14 @@ epilogue::Command epilogue::process_message(std::string message)
         }
     }
 
-    epilogue::Command_ID command_id = epilogue::Command_ID::UNKNOWN;
-    std::string command_body = "";
-    std::string channel_context = "*global*";
-    std::string sender = "*.*";
+    // command object to be returned
+    epilogue::Command command;
+
+    if (words.size() < 2)
+    {
+        command.context = "*none*";
+        return command;
+    }
 
     /* determine type of command */
     int cmd_num = std::atoi(words.at(1).c_str());
@@ -55,18 +60,18 @@ epilogue::Command epilogue::process_message(std::string message)
         switch (cmd_num)
         {
         case 1:
-            command_id = epilogue::Command_ID::WELCOME;
+            command.cmd_id = epilogue::Command_ID::WELCOME;
             epilogue::nick = words.at(2);
             break;
 
         case 433:
-            command_id = epilogue::Command_ID::NICK_TAKEN;
-            command_body = message.substr(message.find(':', 1) + 1);
+            command.cmd_id = epilogue::Command_ID::NICK_TAKEN;
+            command.body = message.substr(message.find(':', 1) + 1);
             break;
 
         case 432:
-            command_id = epilogue::Command_ID::ERRONEOUS_NICK;
-            command_body = message.substr(message.find(':', 1) + 1);
+            command.cmd_id = epilogue::Command_ID::ERRONEOUS_NICK;
+            command.body = message.substr(message.find(':', 1) + 1);
             break;
 
         default:
@@ -77,43 +82,39 @@ epilogue::Command epilogue::process_message(std::string message)
     // server ping
     else if (words.at(0) == "PING")
     {
-        command_id = epilogue::Command_ID::PING;
-        command_body = words.at(1);
+        command.cmd_id = epilogue::Command_ID::PING;
+        command.body = words.at(1);
     }
+
     // sent message
     else if (words.at(1) == "PRIVMSG")
     {
-        command_id = epilogue::Command_ID::PRIVMSG;
-        command_body = message.substr(message.find(':', 1) + 1);
-        channel_context = words.at(2);
-        sender = message.substr(1, message.find('!', 1) - 1);
+        command.cmd_id = epilogue::Command_ID::PRIVMSG;
+        command.body = message.substr(message.find(':', 1) + 1);
+        command.context = words.at(2);
+        command.sender = message.substr(1, message.find('!', 1) - 1);
 
-        if (sender == nick) { channel_context = "*none*"; }
-        else if (channel_context == nick) { channel_context = sender; }
+        if (command.sender == nick) { command.context = "*none*"; }
+        else if (command.context == nick) { command.context = command.sender; }
 
-        sender = "<" + sender + ">";
+        command.sender = "<" + command.sender + ">";
     }
+
     // channel join
     else if (words.at(1) == "JOIN")
     {
-        channel_context = words.at(2);
-        sender = message.substr(1, message.find('!') - 1);
+        command.context = words.at(2);
+        command.sender = message.substr(1, message.find('!') - 1);
 
-        command_id = epilogue::Command_ID::JOIN;
-        command_body = channel_context + " <- " + sender;
+        command.cmd_id = epilogue::Command_ID::JOIN;
+        command.body = command.context + " <- " + command.sender;
     }
-
-    epilogue::Command command = {
-        command_id,
-        command_body,
-        channel_context,
-        sender
-    };
 
     std::cout << "$ { "
         << command.cmd_id << ", \""
         << command.body << "\", \""
         << command.context << "\", \""
         << command.sender << "\" }\n";
+
     return command;
 }
