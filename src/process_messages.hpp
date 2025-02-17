@@ -90,7 +90,8 @@ epilogue::Command epilogue::process_message(std::string message)
     else if (words.at(1) == "PRIVMSG")
     {
         command.cmd_id = epilogue::Command_ID::PRIVMSG;
-        command.body = message.substr(message.find(':', 1) + 1);
+        command.body = message.substr(message.find(' ') + 1);
+        command.body = command.body.substr(command.body.find(':') + 1);
         command.context = words.at(2);
         command.sender = message.substr(1, message.find('!', 1) - 1);
 
