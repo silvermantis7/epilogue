@@ -191,7 +191,8 @@ static void gui::receive_messages()
                 static const std::vector<epilogue::Command_ID> loggable = {
                     epilogue::Command_ID::PRIVMSG,
                     epilogue::Command_ID::JOIN,
-                    epilogue::Command_ID::PART
+                    epilogue::Command_ID::PART,
+                    epilogue::Command_ID::QUIT
                 };
 
                 switch (command.cmd_id)
@@ -222,6 +223,15 @@ static void gui::receive_messages()
                     }
 
                     command.user = "*.*";
+
+                    break;
+
+                case epilogue::Command_ID::QUIT:
+                    command.body = "QUIT: " + command.user + " (" + command.body
+                        + ")";
+                    command.user = "*.*";
+
+                    break;
 
                 default:
                     break;
