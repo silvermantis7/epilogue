@@ -190,7 +190,8 @@ static void gui::receive_messages()
                 // types of commands to be looged in the message display
                 static const std::vector<epilogue::Command_ID> loggable = {
                     epilogue::Command_ID::PRIVMSG,
-                    epilogue::Command_ID::JOIN
+                    epilogue::Command_ID::JOIN,
+                    epilogue::Command_ID::PART
                 };
 
                 switch (command.cmd_id)
@@ -206,6 +207,21 @@ static void gui::receive_messages()
                     command.user = "*.*";
 
                     break;
+
+                case epilogue::Command_ID::PART:
+                    if (command.user == epilogue::nick)
+                    {
+                        command.body = "parted from [" + command.context + "]";
+                        command.context = "*global*";
+                    }
+
+                    else
+                    {
+                        command.body = command.context + " -> " + command.user
+                            + " (" + command.body + ")";
+                    }
+
+                    command.user = "*.*";
 
                 default:
                     break;
@@ -344,10 +360,6 @@ void gui::Connect_Dialog::connect(wxCommandEvent& event)
                 case epilogue::Command_ID::WELCOME:
                     EndModal(0);
                     return;
-
-                // case epilogue::Command_ID::1234:
-                //     wxMessageBox(command.body, "", wxOK | wxICON_INFORMAITON);
-                //     break;
 
                 default: break;
                 }

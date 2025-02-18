@@ -13,6 +13,7 @@ namespace epilogue
         WELCOME,
         NICK_TAKEN,
         ERRONEOUS_NICK,
+        PART
     };
 
     std::string nick;
@@ -115,6 +116,15 @@ epilogue::Command epilogue::process_message(std::string message)
 
         command.cmd_id = epilogue::Command_ID::JOIN;
         command.body = command.context + " <- " + command.user;
+    }
+
+    // user parted from channel
+    else if (words.at(1) == "PART")
+    {
+        command.cmd_id = epilogue::Command_ID::PART;
+        command.context = words.at(2);
+        command.user = message.substr(1, message.find('!') - 1);
+        command.body = message.substr(message.find(" :") + 2);
     }
 
     std::cout << "$ { "
