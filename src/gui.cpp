@@ -400,8 +400,8 @@ static void gui::update_statusbar(wxStatusBar* statusbar,
         time_t time_ptr = time(NULL);
         tm* time_now = std::localtime(&time_ptr);
 
-        char time_str[50];
-        std::strftime(time_str, 50, "%A %H:%M", time_now);
+        char time_str[20];
+        std::strftime(time_str, 20, "%A %H:%M", time_now);
 
         wxTheApp->CallAfter([statusbar, channel_context, time_str]
         {
@@ -439,7 +439,7 @@ gui::Panel::Panel(std::string context, wxAuiNotebook* notebook)
     panel_sizer->Add(message_display, 1, wxALL | wxEXPAND, 5);
 
     // create message sizer
-    message_sizer = new wxFlexGridSizer(0, 2, 2, 5);
+    message_sizer = new wxFlexGridSizer(0, 3, 2, 5);
     message_sizer->SetFlexibleDirection(wxBOTH);
     message_display->SetSizer(message_sizer);
     message_sizer->FitInside(message_display);
@@ -474,12 +474,21 @@ void gui::Panel::log_message(const std::string& user,
     int thumb_size = message_display->GetScrollThumb(wxVERTICAL);
     bool autoscroll = (scroll_pos + thumb_size == scroll_range);
 
+    time_t time_ptr = time(NULL);
+    tm* time_now = std::localtime(&time_ptr);
+    char time_str[10];
+    strftime(time_str, 10, "%R", time_now);
+
+    wxStaticText* time_label = new wxStaticText(message_display, wxID_ANY,
+        time_str);
     wxStaticText* user_label = new wxStaticText(message_display, wxID_ANY,
         user);
     wxStaticText* message_label = new Message_Label(message_display, message);
+    time_label->SetForegroundColour(wxColour(0xFF, 0xFF, 0xFF));
     user_label->SetForegroundColour(wxColour(0xFF, 0xFF, 0xFF));
     message_label->SetForegroundColour(wxColour(0xFF, 0xFF, 0xFF));
 
+    message_sizer->Add(time_label, 0, wxALL, 2);
     message_sizer->Add(user_label, 0, wxALL, 2);
     message_sizer->Add(message_label, 0, wxALL, 2);
 
