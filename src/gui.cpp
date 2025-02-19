@@ -233,6 +233,11 @@ static void gui::receive_messages()
 
                     break;
 
+                case epilogue::Command_ID::PRIVMSG:
+                    command.user = "<" + command.user + ">";
+
+                    break;
+
                 default:
                     break;
                 }

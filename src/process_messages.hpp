@@ -27,6 +27,13 @@ namespace epilogue
         std::string user = "*.*";
     };
 
+    std::unordered_map<std::string, epilogue::Command_ID> literal_commands = {
+        { "PRIVMSG", epilogue::Command_ID::PRIVMSG },
+        { "JOIN", epilogue::Command_ID::JOIN },
+        { "PART", epilogue::Command_ID::PART },
+        { "QUIT", epilogue::Command_ID::QUIT }
+    };
+
     Command process_message(std::string message);
 }
 
@@ -63,6 +70,7 @@ epilogue::Command epilogue::process_message(std::string message)
         {
         case 1:
             command.cmd_id = epilogue::Command_ID::WELCOME;
+            command.body = message.substr(message.find(':', 1) + 1);
             epilogue::nick = words.at(2);
             break;
 
@@ -79,33 +87,48 @@ epilogue::Command epilogue::process_message(std::string message)
         default:
             break;
         }
+
+        return command;
     }
 
     // server ping
-    else if (words.at(0) == "PING")
+    if (words.at(0) == "PING")
     {
         command.cmd_id = epilogue::Command_ID::PING;
         command.body = words.at(1);
+
+        return command;
     }
 
-    // sent message
-    else if (words.at(1) == "PRIVMSG")
+    // discard command if not found in literal_commands
+    if (literal_commands.find(words.at(1)) == literal_commands.end())
     {
-        command.cmd_id = epilogue::Command_ID::PRIVMSG;
-        command.body = message.substr(message.find(' ') + 1);
-        command.body = command.body.substr(command.body.find(':') + 1);
+        command.context = "*none*";
+        return command;
+    }
+
+    command.cmd_id = literal_commands[words.at(1)];
+
+    switch (command.cmd_id)
+    {
+    case epilogue::Command_ID::PRIVMSG:
+        command.body = message.substr(message.find(" :") + 2);
         command.context = words.at(2);
         command.user = message.substr(1, message.find('!', 1) - 1);
 
-        if (command.user == nick) { command.context = "*none*"; }
-        else if (command.context == nick) { command.context = command.user; }
+        if (command.user == nick)
+        {
+            command.context = "*none*";
+        }
 
-        command.user = "<" + command.user + ">";
-    }
+        else if (command.context == "*nick*")
+        {
+            command.context = command.user;
+        }
 
-    // channel join
-    else if (words.at(1) == "JOIN")
-    {
+        break;
+
+    case epilogue::Command_ID::JOIN:
         command.context = words.at(2);
 
         if (command.context.front() == ':')
@@ -117,30 +140,25 @@ epilogue::Command epilogue::process_message(std::string message)
 
         command.cmd_id = epilogue::Command_ID::JOIN;
         command.body = command.context + " <- " + command.user;
-    }
 
-    // user parted from channel
-    else if (words.at(1) == "PART")
-    {
-        command.cmd_id = epilogue::Command_ID::PART;
+        break;
+
+    case epilogue::Command_ID::PART:
         command.context = words.at(2);
         command.user = message.substr(1, message.find('!') - 1);
         command.body = message.substr(message.find(" :") + 2);
-    }
 
-    // user quit channel
-    else if (words.at(1) == "QUIT")
-    {
-        command.cmd_id = epilogue::Command_ID::QUIT;
+        break;
+
+    case epilogue::Command_ID::QUIT:
         command.user = message.substr(1, message.find('!') - 1);
         command.body = message.substr(message.find(" :") + 2);
-    }
 
-    std::cout << "$ { "
-        << command.cmd_id << ", \""
-        << command.body << "\", \""
-        << command.context << "\", \""
-        << command.user << "\" }\n";
+        break;
+
+    default:
+        break;
+    }
 
     return command;
 }
