@@ -597,7 +597,7 @@ gui::Message_Label::Message_Label(wxScrolledWindow* message_display,
 void gui::Message_Label::wrap()
 {
     int width, height, x_pos, y_pos;
-    message_display->GetSize(&width, &height);
-    message_display->GetPosition(&x_pos, &y_pos);
-    Wrap(width - x_pos - 40);
+    message_display->GetClientSize(&width, &height);
+    GetPosition(&x_pos, &y_pos);
+    Wrap(width - x_pos);
 }
