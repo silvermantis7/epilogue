@@ -485,13 +485,69 @@ void gui::Panel::log_message(const std::string& user,
     char time_str[10];
     strftime(time_str, 10, "%R", time_now);
 
+    if (nick_colours.find(user) == nick_colours.end())
+    {
+        int hue = rand() % 360 + 1;
+
+        constexpr float saturation = 0.7;
+        constexpr float lightness = 0.85;
+
+        constexpr float C = (1 - std::fabs(lightness * 2 - 1)) * saturation;
+        constexpr float m = lightness - C / 2;
+
+        float X = C * (1 - std::abs(fmod(hue / 60.f, 2) - 1));
+        float r_, g_, b_ = 0;
+
+        switch ((360 - hue) / 60)
+        {
+            case 0:
+                r_ = C;
+                b_ = X;
+                break;
+
+            case 1:
+                r_ = X;
+                b_ = C;
+                break;
+
+            case 2:
+                g_ = X;
+                b_ = C;
+                break;
+
+            case 3:
+                g_ = C;
+                b_ = X;
+                break;
+
+            case 4:
+                r_ = X;
+                g_ = C;
+                break;
+
+            case 5:
+                r_ = C;
+                g_ = X;
+                break;
+
+            default:
+                break;
+        }
+
+        int r_val = (r_ + m) * 255;
+        int g_val = (g_ + m) * 255;
+        int b_val = (b_ + m) * 255;
+
+        nick_colours[user] = wxColour(r_val, g_val, b_val);
+    }
+
     wxStaticText* time_label = new wxStaticText(message_display, wxID_ANY,
         time_str);
     wxStaticText* user_label = new wxStaticText(message_display, wxID_ANY,
         user);
     wxStaticText* message_label = new Message_Label(message_display, message);
     time_label->SetForegroundColour(wxColour(0xFF, 0xFF, 0xFF));
-    user_label->SetForegroundColour(wxColour(0xFF, 0xFF, 0xFF));
+    user_label->SetForegroundColour(nick_colours[user]);
     message_label->SetForegroundColour(wxColour(0xFF, 0xFF, 0xFF));
 
     message_sizer->Add(time_label, 0, wxALL, 2);

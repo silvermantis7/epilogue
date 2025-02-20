@@ -68,6 +68,12 @@ namespace gui
         wxBoxSizer* panel_sizer;
         std::string context;
 
+        // colours of each displayed nick
+        std::unordered_map<std::string, wxColour> nick_colours = {
+            { "-->", wxColour(0xFF, 0xFF, 0xFF) },
+            { "*.*", wxColour(0xFF, 0xFF, 0xFF) }
+        };
+
     public:
         Panel(std::string context, wxAuiNotebook* notebook);
 
