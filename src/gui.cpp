@@ -192,7 +192,8 @@ static void gui::receive_messages()
                     epilogue::Command_ID::PRIVMSG,
                     epilogue::Command_ID::JOIN,
                     epilogue::Command_ID::PART,
-                    epilogue::Command_ID::QUIT
+                    epilogue::Command_ID::QUIT,
+                    epilogue::Command_ID::NAMES
                 };
 
                 switch (command.cmd_id)
@@ -235,6 +236,11 @@ static void gui::receive_messages()
 
                 case epilogue::Command_ID::PRIVMSG:
                     command.user = "<" + command.user + ">";
+
+                    break;
+
+                case epilogue::Command_ID::NAMES:
+                    command.body = "NAMES: " + command.body;
 
                     break;
 

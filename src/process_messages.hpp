@@ -14,7 +14,8 @@ namespace epilogue
         NICK_TAKEN,
         ERRONEOUS_NICK,
         PART,
-        QUIT
+        QUIT,
+        NAMES
     };
 
     std::string nick;
@@ -82,6 +83,12 @@ epilogue::Command epilogue::process_message(std::string message)
         case 432:
             command.cmd_id = epilogue::Command_ID::ERRONEOUS_NICK;
             command.body = message.substr(message.find(':', 1) + 1);
+            break;
+
+        case 353:
+            command.cmd_id = epilogue::Command_ID::NAMES;
+            command.body = message.substr(message.find(" :") + 2);
+            command.context = words.at(4);
             break;
 
         default:
