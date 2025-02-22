@@ -71,7 +71,8 @@ namespace gui
         // colours of each displayed nick
         std::unordered_map<std::string, wxColour> nick_colours = {
             { "-->", wxColour(0xFF, 0xFF, 0xFF) },
-            { "*.*", wxColour(0xFF, 0xFF, 0xFF) }
+            { "*.*", wxColour(0xFF, 0xFF, 0xFF) },
+            { "TOPIC:", wxColour(0xFF, 0xFF, 0xFF) }
         };
 
     public:

@@ -193,7 +193,8 @@ static void gui::receive_messages()
                     epilogue::Command_ID::JOIN,
                     epilogue::Command_ID::PART,
                     epilogue::Command_ID::QUIT,
-                    epilogue::Command_ID::NAMES
+                    epilogue::Command_ID::NAMES,
+                    epilogue::Command_ID::TOPIC
                 };
 
                 switch (command.cmd_id)
@@ -241,6 +242,11 @@ static void gui::receive_messages()
 
                 case epilogue::Command_ID::NAMES:
                     command.body = "NAMES: " + command.body;
+
+                    break;
+
+                case epilogue::Command_ID::TOPIC:
+                    command.user = "TOPIC:";
 
                     break;
 
