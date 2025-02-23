@@ -9,6 +9,8 @@ std::unordered_map<std::string, gui::Panel*> channel_logs = { };
 
 bool gui::Epilogue::OnInit()
 {
+    srand(time(0));
+
     gui::main_frame = new gui::Main_Frame(nullptr);
     gui::main_frame->Show(true);
     return true;
