@@ -556,7 +556,15 @@ void gui::Panel::log_message(const std::string& user,
     wxStaticText* message_label = new Message_Label(message_display, message);
     time_label->SetForegroundColour(wxColour(0xFF, 0xFF, 0xFF));
     user_label->SetForegroundColour(nick_colours[user]);
-    message_label->SetForegroundColour(wxColour(0xFF, 0xFF, 0xFF));
+
+    if (message.find(epilogue::nick) != std::string::npos)
+    {
+        message_label->SetForegroundColour(wxColour(0xFF, 0xFF, 0xC0));
+    }
+    else
+    {
+        message_label->SetForegroundColour(wxColour(0xFF, 0xFF, 0xFF));
+    }
 
     message_sizer->Add(time_label, 0, wxALL, 2);
     message_sizer->Add(user_label, 0, wxALL, 2);
