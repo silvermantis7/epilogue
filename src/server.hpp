@@ -92,7 +92,8 @@ std::vector<epilogue::Command> epilogue::Connection::read_messages()
 
     std::stringstream ss(buffer_data);
     std::string message;
-    std::vector<epilogue::Command> messages;
+    std::vector<std::string> messages;
+    std::vector<epilogue::Command> commands;
 
     while(std::getline(ss, message, '\n'))
     {
@@ -101,15 +102,7 @@ std::vector<epilogue::Command> epilogue::Connection::read_messages()
             message.pop_back();
         }
 
-        epilogue::Command command = epilogue::process_message(message);
-
-        if (command.cmd_id == epilogue::Command_ID::PING)
-        {
-            send_message("PONG " + command.body);
-        }
-
-        messages.push_back(command);
-        std::cout << ">>> " << message << "\n";
+        messages.push_back(message);
     }
 
     // if last line overruns buffer
@@ -119,7 +112,20 @@ std::vector<epilogue::Command> epilogue::Connection::read_messages()
         messages.pop_back();
     }
 
-    return messages;
+    for (std::string message : messages)
+    {
+        epilogue::Command command = epilogue::process_message(message);
+
+        if (command.cmd_id == epilogue::Command_ID::PING)
+        {
+            send_message("PONG " + command.body);
+        }
+
+        commands.push_back(command);
+        std::cout << ">>> " << message << "\n";
+    }
+
+    return commands;
 }
 
 void epilogue::Connection::send_message(std::string message)
