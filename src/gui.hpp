@@ -122,7 +122,7 @@ namespace gui
     struct Message_Label : public wxStaticText
     {
         Message_Label(wxScrolledWindow* message_display,
-            const std::string& message);
+            const wxString& message);
 
     protected:
         wxScrolledWindow* message_display = nullptr;

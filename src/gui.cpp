@@ -553,7 +553,8 @@ void gui::Panel::log_message(const std::string& user,
         time_str);
     wxStaticText* user_label = new wxStaticText(message_display, wxID_ANY,
         user);
-    wxStaticText* message_label = new Message_Label(message_display, message);
+    wxStaticText* message_label = new Message_Label(message_display,
+        wxString(message.c_str(), wxConvUTF8));
     time_label->SetForegroundColour(wxColour(0xFF, 0xFF, 0xFF));
     user_label->SetForegroundColour(nick_colours[user]);
 
@@ -600,7 +601,7 @@ gui::Panel::~Panel()
 }
 
 gui::Message_Label::Message_Label(wxScrolledWindow* message_display,
-    const std::string& message)
+    const wxString& message)
     : wxStaticText(message_display, wxID_ANY, message)
     , message_display{message_display}
     , message{message}
