@@ -16,10 +16,12 @@
 #include <wx/sizer.h>
 #include <wx/aui/auibook.h>
 #include <wx/frame.h>
+#include <wx/glcanvas.h>
 
 #include <unordered_map>
 
 #include "server.hpp"
+#include "message_display.hpp"
 
 namespace gui
 {
@@ -62,8 +64,7 @@ namespace gui
     class Panel : public wxPanel
     {
     protected:
-        wxScrolledWindow* message_display;
-        wxFlexGridSizer* message_sizer;
+        gui::Message_Display* message_display;
         wxTextCtrl* message_box;
         wxBoxSizer* panel_sizer;
         std::string context;
@@ -118,17 +119,4 @@ namespace gui
 
     static void update_statusbar(wxStatusBar* statusbar,
         std::string* channel_context);
-
-    struct Message_Label : public wxStaticText
-    {
-        Message_Label(wxScrolledWindow* message_display,
-            const wxString& message);
-
-    protected:
-        wxScrolledWindow* message_display = nullptr;
-        wxFlexGridSizer* message_sizer = nullptr;
-        void wrap();
-        void wrap(wxSizeEvent& size_event) { wrap(); }
-        std::string message;
-    };
 }

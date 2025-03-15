@@ -446,17 +446,11 @@ gui::Panel::Panel(std::string context, wxAuiNotebook* notebook)
     this->SetSizer(panel_sizer);
 
     // create message window
-    message_display = new wxScrolledWindow(this, wxID_ANY, wxDefaultPosition,
-        wxDefaultSize, wxVSCROLL | wxEXPAND);
-    message_display->SetScrollRate(0, 1);
-    message_display->SetBackgroundColour(wxColour(0x00, 0x00, 0x00));
+    wxGLAttributes disp_attrs;
+    disp_attrs.PlatformDefaults().MinRGBA(8, 8, 8, 8).DoubleBuffer().Depth(24)
+        .EndList();
+    message_display = new gui::Message_Display(this);
     panel_sizer->Add(message_display, 1, wxALL | wxEXPAND, 5);
-
-    // create message sizer
-    message_sizer = new wxFlexGridSizer(0, 3, 2, 5);
-    message_sizer->SetFlexibleDirection(wxBOTH);
-    message_display->SetSizer(message_sizer);
-    message_sizer->FitInside(message_display);
 
     // create message box
     message_box = new wxTextCtrl(this, wxID_ANY, wxEmptyString,
@@ -482,12 +476,6 @@ gui::Panel::Panel(std::string context, wxAuiNotebook* notebook)
 void gui::Panel::log_message(const std::string& user,
     const std::string& message)
 {
-    // check if scrollbar is at the bottom
-    int scroll_pos = message_display->GetScrollPos(wxVERTICAL);
-    int scroll_range = message_display->GetScrollRange(wxVERTICAL);
-    int thumb_size = message_display->GetScrollThumb(wxVERTICAL);
-    bool autoscroll = (scroll_pos + thumb_size == scroll_range);
-
     time_t time_ptr = time(NULL);
     tm* time_now = std::localtime(&time_ptr);
     char time_str[10];
@@ -549,36 +537,11 @@ void gui::Panel::log_message(const std::string& user,
         nick_colours[user] = wxColour(r_val, g_val, b_val);
     }
 
-    wxStaticText* time_label = new wxStaticText(message_display, wxID_ANY,
-        time_str);
-    wxStaticText* user_label = new wxStaticText(message_display, wxID_ANY,
-        user);
-    wxStaticText* message_label = new Message_Label(message_display,
-        wxString(message.c_str(), wxConvUTF8));
-    time_label->SetForegroundColour(wxColour(0xFF, 0xFF, 0xFF));
-    user_label->SetForegroundColour(nick_colours[user]);
-
     if (message.find(epilogue::nick) != std::string::npos)
     {
-        message_label->SetForegroundColour(wxColour(0xFF, 0xFF, 0xC0));
     }
     else
     {
-        message_label->SetForegroundColour(wxColour(0xFF, 0xFF, 0xFF));
-    }
-
-    message_sizer->Add(time_label, 0, wxALL, 2);
-    message_sizer->Add(user_label, 0, wxALL, 2);
-    message_sizer->Add(message_label, 0, wxALL, 2);
-
-    message_sizer->FitInside(message_display);
-
-    if (autoscroll)
-    {
-        // scroll down to new message
-        scroll_range = message_display->GetScrollRange(wxVERTICAL);
-        thumb_size = message_display->GetScrollThumb(wxVERTICAL);
-        message_display->Scroll(0, scroll_range - thumb_size);
     }
 }
 
@@ -598,23 +561,4 @@ gui::Panel::~Panel()
         // close application
         main_frame->Close();
     }
-}
-
-gui::Message_Label::Message_Label(wxScrolledWindow* message_display,
-    const wxString& message)
-    : wxStaticText(message_display, wxID_ANY, message)
-    , message_display{message_display}
-    , message{message}
-{
-    wrap();
-
-    Bind(wxEVT_SIZE, &gui::Message_Label::wrap, this);
-}
-
-void gui::Message_Label::wrap()
-{
-    int width, height, x_pos, y_pos;
-    message_display->GetClientSize(&width, &height);
-    GetPosition(&x_pos, &y_pos);
-    Wrap(width - x_pos);
 }
